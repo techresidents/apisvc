@@ -1,18 +1,12 @@
 import logging
 
-import gevent.queue
-
-from trpycore import riak_gevent
 from trpycore.greenlet.util import join
-from trpycore.riak_common.factory import RiakClientFactory
-from trsvcscore.mongrel2.decorator import session_required
 from trsvcscore.service_gevent.handler.service import GServiceHandler
 from trsvcscore.service_gevent.handler.mongrel2 import GMongrel2Handler
-from trsvcscore.session.riak import RiakSessionStorePool
-from tridlcore.gen.ttypes import RequestContext
 from trapisvc.gen import TApiService
 
 import settings
+from api import api_v1
 
 class ApiServiceHandler(TApiService.Iface, GServiceHandler):
     """Api service handler."""
@@ -28,7 +22,8 @@ class ApiServiceHandler(TApiService.Iface, GServiceHandler):
         super(ApiServiceHandler, self).__init__(
                 service,
                 zookeeper_hosts=settings.ZOOKEEPER_HOSTS,
-                database_connection=settings.DATABASE_CONNECTION)
+                database_connection=settings.DATABASE_CONNECTION,
+                database_connection_pool_size=settings.DATABASE_POOL_SIZE)
         
         self.log = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
 
@@ -59,10 +54,7 @@ class ApiServiceHandler(TApiService.Iface, GServiceHandler):
 
 class ApiMongrel2Handler(GMongrel2Handler):
     """API mongrel2 handler."""
-
-    URL_HANDLERS = [
-    ]
-
+        
     def __init__(self, service_handler):
         """ApiMongrel2Handler constructor.
 
@@ -70,36 +62,10 @@ class ApiMongrel2Handler(GMongrel2Handler):
             service_handler: ApiServiceHandler object.
         """
         super(ApiMongrel2Handler, self).__init__(
-                url_handlers=self.URL_HANDLERS)
+                url_handlers=api_v1.get_uris())
 
         self.service_handler = service_handler
         self.log = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
-
-        self.riak_client_factory = RiakClientFactory(
-                host=settings.RIAK_HOST,
-                port=settings.RIAK_PORT,
-                transport_class=riak_gevent.RiakPbcTransport)
-
-        self.session_store_pool = RiakSessionStorePool(
-                self.riak_client_factory,
-                settings.RIAK_SESSION_BUCKET,
-                settings.RIAK_SESSION_POOL_SIZE,
-                queue_class=gevent.queue.Queue)
-        
-    def _handle_message(self, request, session):
-        """Message helper..
-
-        Args:
-            request: Mongrel SafeRequest object.
-            session: Session object.
-        Returns:
-            RequestContext object
-        """
-        request_context = RequestContext(
-                userId=session.user_id(),
-                sessionId=session.get_key())
-
-        return request_context
 
     def handle_disconnect(self, request):
         """Mongrel connection disconnect handler."""

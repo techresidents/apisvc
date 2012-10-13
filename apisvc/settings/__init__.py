@@ -26,9 +26,6 @@ if "SERVICE_ENV" in os.environ:
     elif os.environ["SERVICE_ENV"] == "prod":
         reload_settings_module("settings.prod_settings")
         from settings.prod_settings import *
-    elif os.environ["SERVICE_ENV"] == "test":
-        reload_settings_module("settings.test_settings")
-        from settings.test_settings import *
     else:
         reload_settings_module("settings.default_settings")
         from settings.default_settings import *

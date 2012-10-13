@@ -23,6 +23,7 @@ DATABASE_NAME = "localdev_techresidents"
 DATABASE_USERNAME = "techresidents"
 DATABASE_PASSWORD = "techresidents"
 DATABASE_CONNECTION = "postgresql+psycopg2://%s:%s@/%s?host=%s" % (DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_NAME, DATABASE_HOST)
+DATABASE_POOL_SIZE = 20
 
 #Zookeeper settings
 ZOOKEEPER_HOSTS = ["localhost:2181"]
