@@ -2,48 +2,68 @@ import copy
 import functools
 import logging
 
-class RequestContext(object):
-    def __init__(self,
-            api=None,
-            session=None,
-            user_id=None,
-            resource_manager=None,
-            resource_class=None,
-            related_field=None,
-            method=None,
-            request=None,
-            data=None,
-            bulk=False,
-            query=None):
-        self.api = api
-        self.session = session
-        self.user_id = user_id
-        self.resource_manager = resource_manager
-        self.resource_class = resource_class
-        self.related_field = related_field
-        self.method = method
-        self.request = request
-        self.data = data
-        self.bulk = bulk 
-        self.query = query
-    
-    def is_direct_resource(self):
-        return self.resource_class == self.resource_manager.resource_class
+from rest.context import RequestContext
+from rest.fields import ListField
+from rest.manager import ResourceManager
+from rest.query import Query
+from rest.resource import ResourceBase
 
-    def is_related_resource(self):
-        if not self.is_direct_resource() and \
-                self.related_field and \
-                self.related_field.relation is self.resource_class:
-            return True
-        else:
-            return False
+class ApiResourceQuery(Query):
+
+    def __init__(self, api, resource_class, transaction_factory):
+        self.api = api
+        super(ApiResourceQuery, self).__init__(
+                resource_class=resource_class,
+                transaction_factory = transaction_factory)
+
+    def _get_entities(self):
+        entities = []
+
+        for resource_class in self.api.resource_classes.values():
+            location = self.api.get_resource_class_uri(resource_class)
+            entity = {
+                "name": resource_class.desc.resource_name,
+                "location": location,
+                "schema": "%s/schema" % location,
+            }
+            entities.append(entity)
+        return entities
+
+    def one(self):
+        entities = self._get_entities()
+        api = self.resource_class(
+                entities=entities)
+        return api
+
+
+class ApiResourceManager(ResourceManager):
+    def __init__(self, api):
+        self.api = api
+        super(ApiResourceManager, self).__init__(query_factory=self.query_factory)
     
-    def is_nested_resource(self):
-        if not self.is_direct_resource() and not self.is_related_resource():
-            return True
-        else:
-            return False
-    
+    def query_factory(self):
+        return ApiResourceQuery(self.api, self.resource_class, None)
+
+    def uris(self):
+        results = []
+        uri = r"^$"
+        context = RequestContext(
+                resource_class=self.resource_class,
+                bulk=False,
+                resource_manager=self)
+        results.append((uri, context, self.dispatch))
+        return results
+
+
+class ApiResourceBase(ResourceBase):
+    class Meta:
+        abstract = True
+        resource_name = "api"
+        methods = ["GET"]
+
+    entities = ListField()
+
+
 class Api(object):
     def __init__(self, base_uri):
         self.base_uri = base_uri
@@ -54,6 +74,19 @@ class Api(object):
         self.request_middlewares = []
         self.response_middlewares = []
         self.resource_classes = {}
+
+        #dynamically create ApiResourceBase sublcass
+        api_class_attributes = {
+            "__module__": ApiResourceBase.__module__,
+            "objects": ApiResourceManager(self)
+        }
+
+        api_resource_class = type(
+                self.base_uri.replace("/", "_")+"Api",
+                (ApiResourceBase,),
+                api_class_attributes)
+
+        self.add_resource(api_resource_class)
 
     def add_resource(self, resource_class):
         self.resource_classes[resource_class.desc.resource_name] = resource_class
@@ -78,6 +111,11 @@ class Api(object):
 
     def get_resource_class(self, resource_name):
         return self.resource_classes[resource_name]
+
+    def get_resource_class_uri(self, resource_class):
+        return "%s/%s" % (
+               self.base_uri,
+               resource_class.desc.resource_name)
     
     def get_resource_uri(self, resource):
         if resource.primary_key_name():

@@ -181,6 +181,8 @@ from schema import SchemaResourceBase, SchemaResourceManager
 class SchemaMeta(ResourceMeta):
     def __new__(cls, name, bases, attributes):
         new_class = super(SchemaMeta, cls).__new__(cls, name, bases, attributes)
+
+        #dynamically create SchemaResourceBase sublcass
         schema_class_attributes = {
             "__module__": SchemaResourceBase.__module__,
             "objects": SchemaResourceManager()

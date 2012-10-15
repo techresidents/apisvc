@@ -1,4 +1,4 @@
-from rest.api import RequestContext
+from rest.context import RequestContext
 from rest.fields import BooleanField, DateField, DateTimeField, DictField, FloatField, \
         IntegerField, ListField, RelatedField, StringField, TimestampField
 from rest.manager import ResourceManager

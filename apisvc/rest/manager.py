@@ -1,6 +1,6 @@
 import logging 
 
-from rest.api import RequestContext
+from rest.context import RequestContext
 from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ForeignKey
 from rest.response import Response
