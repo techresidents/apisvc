@@ -1,3 +1,4 @@
+from rest.exceptions import InvalidQuery
 from rest.fields import BooleanField
 
 class Operation(object):
@@ -158,7 +159,7 @@ class Filter(object):
 
                     #target field should be the last part
                     if parts[-1] != part:
-                        raise RuntimeError("invalid filter '%s'" % arg)
+                        raise InvalidQuery("invalid filter '%s'" % arg)
 
                 elif part in current.desc.related_fields_by_name:
                     field = current.desc.related_fields_by_name[part]
@@ -168,7 +169,7 @@ class Filter(object):
                         related_fields.append(field)
                         current = field.relation
                 else:
-                    raise RuntimeError("invalid filter '%s'" % arg)
+                    raise InvalidQuery("invalid filter '%s'" % arg)
             
             primary_key = current.desc.primary_key
             target_field = target_field or current.desc.fields_by_name[primary_key]

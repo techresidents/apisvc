@@ -71,7 +71,7 @@ class Field(object):
     def validate(self, value):
         python_value = self.to_python(value)
         if not self.nullable and python_value is None:
-            raise RuntimeError()
+            raise ValidationError("field not nullable")
         return python_value
 
 class StringField(Field):

@@ -1,3 +1,5 @@
+from rest.exceptions import InvalidQuery
+
 class OrderBy(object):
     def __init__(self, related_fields, target_field):
         self.related_fields = related_fields
@@ -29,14 +31,14 @@ class OrderBy(object):
         
                     #target field should be the last part
                     if parts[-1] != part:
-                        raise RuntimeError("invalid filter '%s'" % arg)
+                        raise InvalidQuery("invalid order_by '%s'" % arg)
         
                 elif part in current.desc.related_fields_by_name:
                     field = current.desc.related_fields_by_name[part]
                     related_fields.append(field)
                     current = field.relation
                 else:
-                    raise RuntimeError("invalid filter '%s'" % arg)
+                    raise InvalidQuery("invalid order_by '%s'" % arg)
         
             primary_key = current.desc.primary_key
             target_field = target_field or current.desc.fields_by_name[primary_key]

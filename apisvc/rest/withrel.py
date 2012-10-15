@@ -1,3 +1,5 @@
+from rest.exceptions import InvalidQuery
+
 class WithRelation(object):
     def __init__(self, related_fields):
         self.related_fields = related_fields
@@ -21,7 +23,7 @@ class WithRelation(object):
                     related_fields.append(field)
                     current = field.relation
                 else:
-                    raise RuntimeError("invalid with relation '%s'" % arg)
+                    raise InvalidQuery("invalid with relation '%s'" % arg)
         
             results.append(WithRelation(related_fields))
 

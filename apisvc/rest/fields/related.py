@@ -1,4 +1,5 @@
 from trpycore.encode.basic import basic_encode, basic_decode
+from rest.exceptions import ValidationError
 from rest.fields import Field
 
 class RelatedField(Field):
@@ -30,7 +31,7 @@ class RelatedDescriptor(object):
 
     def __set__(self, instance, value):
         if value is None:
-            raise RuntimeError()
+            raise ValidationError("related descriptor cannot be null")
         setattr(instance, self.cache_name, value)
 
 class ReverseForeignKey(RelatedField):

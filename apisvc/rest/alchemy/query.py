@@ -1,4 +1,6 @@
-from rest.exceptions import InvalidQuery
+from sqlalchemy.orm.exc import NoResultFound
+
+from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ManyToMany
 from rest.query import Query
 from rest.resource import Resource
@@ -127,7 +129,10 @@ class AlchemyQuery(Query):
     def get(self, id):
         with self.transaction_factory() as db_session:
             query = self._build_query(db_session)
-            model = query.get(id)
+            try:
+                model = query.get(id)
+            except NoResultFound:
+                raise ResourceNotFound()
             result = self.model_to_resource(model)
             self._apply_with_relations(result)
             return result
@@ -135,7 +140,10 @@ class AlchemyQuery(Query):
     def one(self):
         with self.transaction_factory() as db_session:
             query = self._build_query(db_session)
-            model = query.one()
+            try:
+                model = query.one()
+            except NoResultFound:
+                raise ResourceNotFound()
             result = self.model_to_resource(model)
             self._apply_with_relations(result)
             return result

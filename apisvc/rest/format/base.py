@@ -86,7 +86,7 @@ class Formatter(object):
                 elif isinstance(field, TimestampField):
                     value = self.read_timestamp()
                 else:
-                    raise RuntimeError()
+                    raise RuntimeError("unsupoorted field")
 
                 setattr(resource, field.attname, value)
                 self.read_field_end(field)
@@ -146,7 +146,7 @@ class Formatter(object):
             elif isinstance(field, TimestampField):
                 self.write_timestamp(getattr(resource, field.attname))
             else:
-                raise RuntimeError()
+                raise RuntimeError("unsupported field")
 
             self.write_field_end(field)
 

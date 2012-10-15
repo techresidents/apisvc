@@ -1,4 +1,7 @@
+import logging 
+
 from rest.api import RequestContext
+from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ForeignKey
 from rest.response import Response
 from rest.query import Query
@@ -56,55 +59,67 @@ class ResourceManager(object):
         return result
 
     def dispatch(self, context, request, **kwargs):
-        response_code = 200
+        try:
+            response_code = 200
 
-        if context.resource_class is self.resource_class and context.related_field is None:
-            if request.method() == "GET":
-                if context.bulk:
-                    result = context.query.all()
-                else:
-                    result = context.query.one()
-            elif request.method() == "POST":
-                if context.bulk:
-                    result = context.query.bulk_create(resources=context.data)
-                else:
-                    result = context.query.create(resource=context.data)
-                response_code = 201
-            elif request.method() == "PUT":
-                if context.bulk:
-                    result = context.query.bulk_update(resources=context.data)
-                else:
-                    result = context.query.update(resource=context.data)
-            elif request.method() == "DELETE":
-                if context.bulk:
-                    result = context.query.bulk_delete(resources=context.data)
-                else:
-                    result = context.query.delete()
-        
-        elif context.resource_class and context.related_field:
-            if request.method() == "GET":
-                if context.bulk:
-                    result = context.query.all()
-                else:
-                    result = context.query.one()
-            elif request.method() == "POST":
-                if context.bulk:
-                    result = context.query.create_bulk(context.data)
-                else:    
-                    result = context.query.create(context.data)
-                response_code = 201
-            elif request.method() == "PUT":
-                if context.bulk:
-                    result = context.query.bulk_update(context.data)
-                else:
-                    result = context.query.update(context.data)
-            elif request.method() == "DELETE":
-                if context.bulk:
-                    result = context.query.bulk_delete(context.data)
-                else:
-                    result = context.query.delete()
-        else:
-            result = None
+            if context.resource_class is self.resource_class and context.related_field is None:
+                if request.method() == "GET":
+                    if context.bulk:
+                        result = context.query.all()
+                    else:
+                        result = context.query.one()
+                elif request.method() == "POST":
+                    if context.bulk:
+                        result = context.query.bulk_create(resources=context.data)
+                    else:
+                        result = context.query.create(resource=context.data)
+                    response_code = 201
+                elif request.method() == "PUT":
+                    if context.bulk:
+                        result = context.query.bulk_update(resources=context.data)
+                    else:
+                        result = context.query.update(resource=context.data)
+                elif request.method() == "DELETE":
+                    if context.bulk:
+                        result = context.query.bulk_delete(resources=context.data)
+                    else:
+                        result = context.query.delete()
+            
+            elif context.resource_class and context.related_field:
+                if request.method() == "GET":
+                    if context.bulk:
+                        result = context.query.all()
+                    else:
+                        result = context.query.one()
+                elif request.method() == "POST":
+                    if context.bulk:
+                        result = context.query.create_bulk(context.data)
+                    else:    
+                        result = context.query.create(context.data)
+                    response_code = 201
+                elif request.method() == "PUT":
+                    if context.bulk:
+                        result = context.query.bulk_update(context.data)
+                    else:
+                        result = context.query.update(context.data)
+                elif request.method() == "DELETE":
+                    if context.bulk:
+                        result = context.query.bulk_delete(context.data)
+                    else:
+                        result = context.query.delete()
+            else:
+                result = None
+        except InvalidQuery as error:
+            logging.warning(str(error))
+            response_code=400
+            result = "invalid query"
+        except ResourceNotFound:
+            response_code = 404
+            result = "resource not found"
+        except Exception as error:
+            logging.exception(error)
+            response_code = 500
+            result = "internal error"
         
         result = Response(code=response_code, data=result)
         return result
@@ -159,7 +174,7 @@ class ResourceManager(object):
             value = getattr(resource_instance, resource_instance.desc.primary_key)
         
         if arg in kwargs and kwargs[arg] != value:
-            raise RuntimeError()
+            raise InvalidQuery("contradicting related filter")
         kwargs[arg] = value
         return kwargs
 
