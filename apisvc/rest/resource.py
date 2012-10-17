@@ -52,15 +52,22 @@ class ResourceDescription(object):
             self.primary_key = field.attname
             self.primary_key_field = field
 
-        if isinstance(field, RelatedField) and field.many:
+        if isinstance(field, RelatedField):
             self.related_fields.append(field)
             self.related_fields_by_name[field.name] = field
         else:
             self.fields.append(field)
             self.fields_by_name[field.attname] = field
-            if isinstance(field, RelatedField):
-                self.related_fields.append(field)
-                self.related_fields_by_name[field.name] = field
+
+        #if isinstance(field, RelatedField) and field.many:
+        #    self.related_fields.append(field)
+        #    self.related_fields_by_name[field.name] = field
+        #else:
+        #    self.fields.append(field)
+        #    self.fields_by_name[field.attname] = field
+        #    if isinstance(field, RelatedField):
+        #        self.related_fields.append(field)
+        #        self.related_fields_by_name[field.name] = field
 
 
 class ResourceMeta(type):

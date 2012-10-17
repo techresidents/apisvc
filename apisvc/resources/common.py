@@ -89,16 +89,19 @@ class TopicResource(Resource):
         limit = 20
     
     id = IntegerField(primary_key=True)
-    parent = ForeignKey("self", backref="children", nullable=True)
+    parent_id = IntegerField(nullable=True)
     title = StringField()
     description = StringField()
     duration = IntegerField()
     tree = TopicTreeField("self")
     rank = IntegerField(nullable=True)
     level = IntegerField(nullable=True)
-    user = ForeignKey(UserResource, backref="topics+")
+    user_id = IntegerField()
     public = BooleanField()
     type_id = IntegerField()
 
+    parent = ForeignKey("self", backref="children", nullable=True)
+    user = ForeignKey(UserResource, backref="topics+")
+
     objects = TopicManager(db_session_factory)
-    authorizer = PerUserResourceAuthorizer(UserResource, "user_id")
+    #authorizer = PerUserResourceAuthorizer(UserResource, "user_id")

@@ -32,24 +32,15 @@ class Formatter(object):
         resource = resource or working_resource
         for j in range(fields_length):
             field = self.read_field_begin()
-            if isinstance(field, ForeignKey):
-                value = self.read_dynamic()
-                if isinstance(value, dict):
-                    value = self.read_resource(api)
-                    setattr(resource, field.name, value)
-                elif isinstance(value, basestring) and value.startswith("/"):
-                    pass
-                else:
-                    value = self.read_dynamic()
-                    setattr(resource, field.attname, value)
-                self.read_field_end(field)
-
-            elif isinstance(field, RelatedField):
+            if isinstance(field, RelatedField):
                 value = self.read_dynamic()
                 if isinstance(value, basestring) and value.startswith("/"):
                     pass
                 else:
-                    value = self.read_resources(api)
+                    if field.many:
+                        value = self.read_resources(api)
+                    else:
+                        value = self.read_resource(api)
                     setattr(resource, field.name, value)
                 self.read_field_end(field)
             else:
@@ -129,8 +120,6 @@ class Formatter(object):
                 for key, value in values.items():
                     self.write_dynamic({key: value})
                 self.write_dict_end()
-            elif isinstance(field, ForeignKey):
-                self.write_dynamic(getattr(resource, field.attname))
             elif isinstance(field, FloatField):
                 self.write_float(getattr(resource, field.attname))
             elif isinstance(field, IntegerField):
