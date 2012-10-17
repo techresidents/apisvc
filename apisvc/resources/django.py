@@ -11,6 +11,7 @@ class UserResource(Resource):
         model_class = User
         user_filter = "id"
         methods = ["GET"]
+        bulk_methods = ["GET"]
         related_methods = {
             "chat_sessions": ["GET"]
         }

@@ -38,6 +38,7 @@ class ChatSessionResource(Resource):
             "chatTest": ["GET"]
         }
         related_bulk_methods = {
+            "users": ["GET"],
         }
 
         filtering = {
@@ -46,7 +47,7 @@ class ChatSessionResource(Resource):
             "chatTest__id": ["eq"],
             "tokenTest": ["eq"],
         }    
-        with_relations = ["chatTest"]
+        with_relations = ["chatTest", "users"]
         ordering = ["id", "tokenTest", "chatTest__id"]
         limit = 20
 
