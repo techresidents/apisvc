@@ -147,7 +147,7 @@ class Api(object):
             except Exception as error:
                 logging.exception(error)
                 response = error
-        
+
         for middleware in self.response_middlewares:
             if isinstance(response, Exception):
                 response = middleware.process_exception(context, request, response, **kwargs)

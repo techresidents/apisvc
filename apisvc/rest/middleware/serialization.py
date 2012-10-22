@@ -1,4 +1,9 @@
+import logging
+
+from rest.exceptions import ValidationError
 from rest.middleware.base import RestMiddleware
+from rest.response import Response
+
 
 DEFAULT_FORMAT = "JSON"
 DEFAULT_CONTENT_TYPE = "application/json"
@@ -13,28 +18,37 @@ FORMAT_CONTENT_TYPE = {
 
 class SerializationMiddleware(RestMiddleware):
     def process_request(self, context, request, **kwargs):
+        response = None
         body = request.body()
         if body:
-            content_type = request.header("content-type") or DEFAULT_CONTENT_TYPE
-            format = CONTENT_TYPE_FORMAT.get(content_type, DEFAULT_FORMAT)
-            result = [] if context.bulk else context.resource_class()
             try:
-                serializer = context.resource_class.serializer
-                context.data = serializer.deserialize(
-                        api=self.api,
-                        data=body,
-                        format=format,
-                        result=result)
-            except:                
-                result = context.resource_class()
-                context.data = serializer.deserialize(
-                        api=self.api,
-                        data=body,
-                        format=format,
-                        result=result)
-                context.bulk = False
+                content_type = request.header("content-type") or DEFAULT_CONTENT_TYPE
+                format = CONTENT_TYPE_FORMAT.get(content_type, DEFAULT_FORMAT)
+                result = [] if context.bulk else context.resource_class()
+                try:
+                    serializer = context.resource_class.serializer
+                    context.data = serializer.deserialize(
+                            api=self.api,
+                            data=body,
+                            format=format,
+                            result=result)
+                except:                
+                    result = context.resource_class()
+                    context.data = serializer.deserialize(
+                            api=self.api,
+                            data=body,
+                            format=format,
+                            result=result)
+                    context.bulk = False
+            except ValidationError as error:
+                logging.warning(str(error))
+                response = Response(code=400, data="invalid data")
+            except Exception as error:
+                logging.exception(error)
+                response = Response(code=400, data="invalid data")
         else:
             context.data = None
+        return response
         
     def process_response(self, context, response, **kwargs):
         if not response.successful:

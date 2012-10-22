@@ -8,7 +8,10 @@ class TransactionMiddleware(RestMiddleware):
         tx_manager.begin()
 
     def process_response(self, context, response, **kwargs):
-        TransactionManager().end()
+        if response.successful:
+            TransactionManager().end()
+        else:
+            TransactionManager().rollback()
         return response
 
     def process_exception(self, context, request, exception, **kwargs):

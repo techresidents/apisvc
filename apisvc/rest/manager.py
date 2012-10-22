@@ -1,7 +1,7 @@
 import logging 
 
 from rest.context import RequestContext
-from rest.exceptions import InvalidQuery, ResourceNotFound
+from rest.exceptions import InvalidQuery, ResourceNotFound, ValidationError
 from rest.fields import ForeignKey
 from rest.response import Response
 from rest.query import Query
@@ -109,7 +109,7 @@ class ResourceManager(object):
                         result = context.query.delete()
             else:
                 result = None
-        except InvalidQuery as error:
+        except (InvalidQuery, ValidationError) as error:
             logging.warning(str(error))
             response_code=400
             result = "invalid query"

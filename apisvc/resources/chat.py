@@ -21,6 +21,8 @@ class ChatResource(Resource):
             "id": ["eq"],
             r"chat_sessions\+__id": ["eq"],
         }    
+        with_relations = ["topic"]
+
     id = EncodedField(primary_key=True)
     topic_id = IntegerField()
     start = DateTimeField()

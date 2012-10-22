@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-
+import datetime
 import json
 
 from trpycore.timezone import tz
@@ -147,7 +147,8 @@ class JsonFormatter(Formatter):
 
     def read_date(self):
         context = self.context_stack[-1]
-        return context.read()
+        isodate = context.read()
+        return datetime.datetime.strptime(isodate, '%Y-%m-%d').date()
 
     def read_datetime(self):
         context = self.context_stack[-1]
@@ -258,7 +259,7 @@ class JsonFormatter(Formatter):
 
     def write_date(self, value):
         context = self.context_stack[-1]
-        context.write(str(value))
+        context.write(value.isoformat())
 
     def write_datetime(self, value):
         context = self.context_stack[-1]

@@ -64,15 +64,22 @@ class Field(object):
 
     def to_model(self, value):
         if self.to_model_method:
-            return self.to_model_method(value)
-        else:
-            return value
-
+            value = self.to_model_method(value)
+        return value
+        
     def validate(self, value):
         python_value = self.to_python(value)
-        if not self.nullable and python_value is None:
-            raise ValidationError("field not nullable")
+        if not self.primary_key and not self.nullable and python_value is None:
+            msg = "'%s' not nullable" % self.name
+            raise ValidationError(msg)
         return python_value
+
+    def validate_for_model(self, value):
+        model_value = self.to_model(value)
+        if not self.primary_key and not self.nullable and model_value is None:
+            msg = "'%s' not nullable" % self.name
+            raise ValidationError(msg)
+        return model_value
 
 class StringField(Field):
     def to_python(self, value):

@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from rest.exceptions import InvalidQuery, ResourceNotFound
@@ -166,23 +167,28 @@ class AlchemyQuery(Query):
         resource = kwargs.pop("resource", None)
         if resource is None:
             resource = self.resource_class(**kwargs)
-
-        with self.transaction_factory() as db_session:
-            model = self.resource_to_model(resource)
-            db_session.add(model)
-            db_session.flush()
-            return self.model_to_resource(model, resource)
+        
+        try:
+            with self.transaction_factory() as db_session:
+                model = self.resource_to_model(resource)
+                db_session.add(model)
+                db_session.flush()
+                return self.model_to_resource(model, resource)
+        except IntegrityError:
+            raise InvalidQuery("invalid data")
 
     def update(self, **kwargs):
         resource = kwargs.pop("resource", None)
         if resource is None:
             resource = self.resource_class(**kwargs)
-
-        with self.transaction_factory() as db_session:
-            query = self._build_query(db_session)
-            model = query.one()
-            self.resource_to_model(resource, model)
-            return self.model_to_resource(model, resource)
+        try:
+            with self.transaction_factory() as db_session:
+                query = self._build_query(db_session)
+                model = query.one()
+                self.resource_to_model(resource, model)
+                return self.model_to_resource(model, resource)
+        except IntegrityError:
+            raise InvalidQuery("invalid data")
 
     def delete(self):
         with self.transaction_factory() as db_session:
@@ -193,44 +199,51 @@ class AlchemyQuery(Query):
     def bulk_create(self, resources):
         if not self.empty():
             raise InvalidQuery("create query must be empty")
+        
+        try:
+            with self.transaction_factory() as db_session:
+                models = []
+                for resource in resources:
+                    model = self.resource_to_model(resource)
+                    db_session.add(model)
+                    models.append(model)
+                db_session.flush()
 
-        with self.transaction_factory() as db_session:
-            models = []
-            for resource in resources:
-                model = self.resource_to_model(resource)
-                db_session.add(model)
-                models.append(model)
-            db_session.flush()
+                for model,resource in zip(models, resources):
+                    self.model_to_resource(model, resource)
 
-            for model,resource in zip(models, resources):
-                self.model_to_resource(model, resource)
-
-            return resources
+                return resources
+        except IntegrityError:
+            raise InvalidQuery("invalid data")
 
     def bulk_update(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]
-        with self.transaction_factory() as db_session:
-            query = self._build_query(db_session)
-            model_pk_name = self.resource_class.desc.primary_key_field.model_attname
-            model_pk = getattr(self.resource_class.desc.model_class, model_pk_name)
-            query = query.filter(model_pk.in_(primary_keys))
-            models = query.all()
-            if len(models) != len(resources):
-                raise InvalidQuery("resources provided does not match filter results")
 
-            model_map = {}
-            for model in models:
-                model_map[getattr(model, model_pk_name)] = model
-            
-            for resource in resources:
-                model = model_map[getattr(resource, model_pk_name)]
-                self.resource_to_model(resource, model)
-            db_session.flush()
+        try:
+            with self.transaction_factory() as db_session:
+                query = self._build_query(db_session)
+                model_pk_name = self.resource_class.desc.primary_key_field.model_attname
+                model_pk = getattr(self.resource_class.desc.model_class, model_pk_name)
+                query = query.filter(model_pk.in_(primary_keys))
+                models = query.all()
+                if len(models) != len(resources):
+                    raise InvalidQuery("resources provided does not match filter results")
 
-            for resource in resources:
-                model = model_map[getattr(resource, model_pk_name)]
-                self.model_to_resource(model, resource)
-            return resources
+                model_map = {}
+                for model in models:
+                    model_map[getattr(model, model_pk_name)] = model
+                
+                for resource in resources:
+                    model = model_map[getattr(resource, model_pk_name)]
+                    self.resource_to_model(resource, model)
+                db_session.flush()
+
+                for resource in resources:
+                    model = model_map[getattr(resource, model_pk_name)]
+                    self.model_to_resource(model, resource)
+                return resources
+        except IntegrityError:
+            raise InvalidQuery("invalid data")
 
     def bulk_delete(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]
