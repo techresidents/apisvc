@@ -1,6 +1,6 @@
 from rest.context import RequestContext
 from rest.fields import BooleanField, DateField, DateTimeField, DictField, FloatField, \
-        IntegerField, ListField, RelatedField, StringField, TimestampField
+        IntegerField, ListField, RelatedField, StringField, TimestampField, StructField
 from rest.manager import ResourceManager
 from rest.query import Query
 from rest.resource import ResourceBase
@@ -27,14 +27,16 @@ def field_to_type(field):
         result = "string"
     elif isinstance(field, TimestampField):
         result = "timestamp"
+    elif isinstance(field, StructField):
+        result = "struct"
     return result
 
 
 class SchemaQuery(Query):
-    def _get_fields(self):
+    def _get_fields(self, container):
         fields = {}
-        parent = self.resource_class.desc.parent_resource_class
-        for field in parent.desc.fields:
+
+        for field in container.desc.fields:
             if field.hidden:
                 continue
 
@@ -44,9 +46,12 @@ class SchemaQuery(Query):
                 "readonly": field.readonly,
                 "type": field_to_type(field)
             }
+            if isinstance(field, StructField):
+                field_dict["fields"] = self._get_fields(field.struct_class)
+
             fields[field.attname] = field_dict
 
-        for field in parent.desc.related_fields:
+        for field in container.desc.related_fields:
             if field.hidden:
                 continue
 
@@ -62,7 +67,8 @@ class SchemaQuery(Query):
 
     def one(self):
         parent = self.resource_class.desc.parent_resource_class
-        fields = self._get_fields()
+
+        fields = self._get_fields(parent)
         methods = parent.desc.allowed_methods
         filters = parent.desc.allowed_filters
         order_bys = parent.desc.allowed_order_bys

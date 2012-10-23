@@ -33,7 +33,26 @@ class ListContext(object):
 
 class ResourceContext(object):
     def __init__(self, resource, json_data=None, parent_context=None):
+        self.container = resource
         self.resource = resource
+        self.json_data = json_data
+        self.parent_context = parent_context
+        self.position = 0
+    def read(self):
+        keys = self.json_data.keys()
+        key = keys[self.position]
+        value = self.json_data[key]
+        self.position += 1
+        result = {key: value}
+        return result
+    def write(self, v):
+        key, value = v.items()[0]
+        self.json_data[key] = value
+
+class StructContext(object):
+    def __init__(self, struct, json_data=None, parent_context=None):
+        self.container = struct
+        self.struct = struct
         self.json_data = json_data
         self.parent_context = parent_context
         self.position = 0
@@ -54,10 +73,10 @@ class FieldContext(object):
         self.json_data = json_data
         self.field = field
         self.field_attname = field_attname
-        self.resource = parent_context.resource
+        self.container = parent_context.container
     def read(self):
         value = self.json_data[self.field_attname]
-        return self.field.validate(value)
+        return value
     def write(self, value):
         self.json_data[self.field_attname] = value
 
@@ -120,17 +139,35 @@ class JsonFormatter(Formatter):
     def read_resource_end(self, resource):
         self.context_stack.pop()
 
+    def read_struct_begin(self):
+        field_context = self.context_stack[-1]
+        field = field_context.field
+        json_data = field_context.read()
+
+        struct = field.struct_class()
+
+        context = StructContext(
+                struct=struct,
+                json_data=json_data,
+                parent_context=field_context)
+
+        self.context_stack.append(context)
+        return struct, len(json_data.keys())
+        
+    def read_struct_end(self, struct):
+        self.context_stack.pop()
+
     def read_field_begin(self):
-        resource_context = self.context_stack[-1]
-        resource = resource_context.resource
-        json_data = resource_context.read()
+        parent_context = self.context_stack[-1]
+        container = parent_context.container
+        json_data = parent_context.read()
         try:
             field_attname = json_data.keys()[0]
-            field = resource.desc.fields_by_name[field_attname]
+            field = container.desc.fields_by_name[field_attname]
         except KeyError:
-            field = resource.desc.related_fields_by_name[field_attname]
+            field = container.desc.related_fields_by_name[field_attname]
 
-        context = FieldContext(resource_context, json_data, field, field_attname)
+        context = FieldContext(parent_context, json_data, field, field_attname)
         self.context_stack.append(context)
         return field
 
@@ -153,7 +190,8 @@ class JsonFormatter(Formatter):
     def read_datetime(self):
         context = self.context_stack[-1]
         timestamp = context.read()
-        return tz.timestamp_to_utc(timestamp)
+        result = tz.timestamp_to_utc(timestamp)
+        return result
 
     def read_float(self):
         context = self.context_stack[-1]
@@ -227,6 +265,26 @@ class JsonFormatter(Formatter):
         self.context_stack.append(context)
 
     def write_resource_end(self, resource):
+        context = self.context_stack.pop()
+        if not self.context_stack:
+            self.buffer.write(json.dumps(context.json_data))
+
+    def write_struct_begin(self, struct):
+        json_data = {}
+
+        if self.context_stack:
+            parent_context = self.context_stack[-1]
+            parent_context.write(json_data)
+        else:
+            parent_context = None
+
+        context = StructContext(
+                struct=struct,
+                json_data=json_data,
+                parent_context=parent_context)
+        self.context_stack.append(context)
+
+    def write_struct_end(self, struct):
         context = self.context_stack.pop()
         if not self.context_stack:
             self.buffer.write(json.dumps(context.json_data))

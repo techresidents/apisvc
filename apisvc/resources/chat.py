@@ -1,19 +1,30 @@
 from sqlalchemy.orm import joinedload
 
-from trsvcscore.db.models import ChatSession, ChatUser, Chat
+from trsvcscore.db.models import ChatSession, ChatUser, Chat, ChatType
 from factory.db import db_session_factory
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authorization import PerUserResourceAuthorizer
-from rest.fields import IntegerField, StringField, ManyToMany, ForeignKey, DateTimeField, EncodedField, EncodedForeignKey
+from rest.fields import IntegerField, StringField, ManyToMany, ForeignKey, DateTimeField, EncodedField, EncodedForeignKey, StructField
 from rest.resource import Resource
+from rest.struct import Struct
 from resources.common import TopicResource
 from resources.django import UserResource
+
+
+class ChatTypeStruct(Struct):
+    class Meta:
+        model_class = ChatType
+
+    id = IntegerField(model_attname="id")
+    chatname = StringField(model_attname="name")
+    description= StringField()
 
 class ChatResource(Resource):
     class Meta:
         resource_name = "chat"
         model_class = Chat
-        methods = ["GET"]
+        methods = ["GET", "PUT"]
+        bulk_methods = ["GET", "PUT"]
         related_methods = {
             "topic": ["GET"],
         }
@@ -26,6 +37,7 @@ class ChatResource(Resource):
     id = EncodedField(primary_key=True)
     topic_id = IntegerField()
     start = DateTimeField()
+    type = StructField(struct_class=ChatTypeStruct, model_struct_class=ChatType, readonly=True)
 
     topic = ForeignKey(TopicResource, backref="chats")
 

@@ -1,6 +1,6 @@
 from trpycore.encode.basic import basic_encode, basic_decode
 from rest.exceptions import ValidationError
-from rest.fields import Field
+from rest.fields.base import Field
 
 class RelatedField(Field):
     def __init__(self, many=False, self_referential=False,  **kwargs):
@@ -41,9 +41,9 @@ class ReverseForeignKey(RelatedField):
         self.backref = backref
         self.reverse = reverse
 
-    def contribute_to_class(self, resource_class, name):
-        super(ReverseForeignKey, self).contribute_to_class(resource_class, name)
-        setattr(resource_class, name, RelatedDescriptor(self))
+    def contribute_to_class(self, container_class, name):
+        super(ReverseForeignKey, self).contribute_to_class(container_class, name)
+        setattr(container_class, name, RelatedDescriptor(self))
 
 class ForeignKey(RelatedField):
     def __init__(self, relation, backref=None, reverse=None, **kwargs):
@@ -55,18 +55,18 @@ class ForeignKey(RelatedField):
     def get_attname(self):
         return "%s_id" % self.name
 
-    def contribute_to_class(self, resource_class, name):
-        super(ForeignKey, self).contribute_to_class(resource_class, name)
+    def contribute_to_class(self, container_class, name):
+        super(ForeignKey, self).contribute_to_class(container_class, name)
         if self.relation == "self":
-            self.relation = resource_class
+            self.relation = container_class
             self.self_referential = True
 
-        setattr(resource_class, name, RelatedDescriptor(self))
+        setattr(container_class, name, RelatedDescriptor(self))
 
         if self.backref is not None:
             hidden = self.backref.endswith("+")
             self.reverse = ReverseForeignKey(
-                    relation=resource_class,
+                    relation=container_class,
                     backref=None,
                     reverse=self,
                     self_referential=self.self_referential,
@@ -97,14 +97,14 @@ class ManyToMany(RelatedField):
         self.through = through
         self.backref_through=backref_through
     
-    def contribute_to_class(self, resource_class, name):
-        super(ManyToMany, self).contribute_to_class(resource_class, name)
-        setattr(resource_class, name, RelatedDescriptor(self))
+    def contribute_to_class(self, container_class, name):
+        super(ManyToMany, self).contribute_to_class(container_class, name)
+        setattr(container_class, name, RelatedDescriptor(self))
 
         if self.backref is not None:
             hidden = self.backref.endswith("+")
             self.reverse = ManyToMany(
-                    relation=resource_class,
+                    relation=container_class,
                     backref=None,
                     reverse=self,
                     through=self.backref_through or self.through,

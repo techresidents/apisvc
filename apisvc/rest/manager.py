@@ -159,7 +159,7 @@ class ResourceManager(object):
     def build_related_query_kwargs(self, related_field, resource_instance, **kwargs):
         if related_field.self_referential:
             if isinstance(related_field, ForeignKey):
-                arg = related_field.resource_class.desc.primary_key
+                arg = resource_instance.desc.primary_key
                 value = getattr(resource_instance, related_field.attname, None)
                 if value is None:
                     #Fetch resource and double check

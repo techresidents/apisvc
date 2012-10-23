@@ -1,5 +1,5 @@
 from rest.fields import BooleanField, DateField, DateTimeField, DictField, FloatField, \
-        ForeignKey, IntegerField, ListField, RelatedField, StringField, TimestampField
+        ForeignKey, IntegerField, ListField, RelatedField, StringField, TimestampField, StructField
 
 class Format:
     JSON = "JSON"
@@ -30,7 +30,12 @@ class Formatter(object):
         self.api = api
         working_resource, fields_length = self.read_resource_begin()
         resource = resource or working_resource
-        for j in range(fields_length):
+        self.read_fields(api, resource, fields_length)
+        self.read_resource_end(resource)
+        return resource
+
+    def read_fields(self, api, container, length):
+        for j in range(length):
             field = self.read_field_begin()
             if isinstance(field, RelatedField):
                 value = self.read_dynamic()
@@ -41,7 +46,7 @@ class Formatter(object):
                         value = self.read_resources(api)
                     else:
                         value = self.read_resource(api)
-                    setattr(resource, field.name, value)
+                    setattr(container, field.name, value)
                 self.read_field_end(field)
             else:
                 if isinstance(field, BooleanField):
@@ -76,14 +81,16 @@ class Formatter(object):
                     value = field.validate(value)
                 elif isinstance(field, TimestampField):
                     value = self.read_timestamp()
+                elif isinstance(field, StructField):
+                    struct, fields_length = self.read_struct_begin()
+                    self.read_fields(api, struct, fields_length)
+                    self.read_struct_end(struct)
+                    value = struct
                 else:
                     raise RuntimeError("unsupoorted field")
 
-                setattr(resource, field.attname, value)
+                setattr(container, field.attname, value)
                 self.read_field_end(field)
-
-        self.read_resource_end(resource)
-        return resource
 
     def write(self, api, resources):
         self.api = api
@@ -102,49 +109,58 @@ class Formatter(object):
     def write_resource(self, api, resource):
         self.api = api
         self.write_resource_begin(resource)
-        for field in resource.desc.fields:
+        self.write_fields(api, resource)
+        self.write_resource_end(resource)
+    
+    def write_fields(self, api, container):
+        for field in container.desc.fields:
             if field.hidden:
                 continue
 
             self.write_field_begin(field, field.attname)
 
             if isinstance(field, BooleanField):
-                self.write_boolean(getattr(resource, field.attname))
+                self.write_boolean(getattr(container, field.attname))
             elif isinstance(field, DateField):
-                self.write_date(getattr(resource, field.attname))
+                self.write_date(getattr(container, field.attname))
             elif isinstance(field, DateTimeField):
-                self.write_datetime(getattr(resource, field.attname))
+                self.write_datetime(getattr(container, field.attname))
             elif isinstance(field, DictField):
-                values = getattr(resource, field.attname) or {}
+                values = getattr(container, field.attname) or {}
                 self.write_dict_begin(len(values))
                 for key, value in values.items():
                     self.write_dynamic({key: value})
                 self.write_dict_end()
             elif isinstance(field, FloatField):
-                self.write_float(getattr(resource, field.attname))
+                self.write_float(getattr(container, field.attname))
             elif isinstance(field, IntegerField):
-                self.write_integer(getattr(resource, field.attname))
+                self.write_integer(getattr(container, field.attname))
             elif isinstance(field, ListField):
-                values = getattr(resource, field.attname) or []
+                values = getattr(container, field.attname) or []
                 self.write_list_begin(len(values))
                 for value in values:
                     self.write_dynamic(value)
                 self.write_list_end()
             elif isinstance(field, StringField):
-                self.write_string(getattr(resource, field.attname))
+                self.write_string(getattr(container, field.attname))
             elif isinstance(field, TimestampField):
-                self.write_timestamp(getattr(resource, field.attname))
+                self.write_timestamp(getattr(container, field.attname))
+            elif isinstance(field, StructField):
+                struct = getattr(container, field.attname)
+                self.write_struct_begin(struct)
+                self.write_fields(api, struct)
+                self.write_struct_end(struct)
             else:
                 raise RuntimeError("unsupported field")
 
             self.write_field_end(field)
 
-        for field in resource.desc.related_fields:
+        for field in container.desc.related_fields:
             if field.hidden:
                 continue
-            related_descriptor = getattr(resource.__class__, field.name)
-            if related_descriptor.is_loaded(resource):
-                resources = getattr(resource, field.name)
+            related_descriptor = getattr(container.__class__, field.name)
+            if related_descriptor.is_loaded(container):
+                resources = getattr(container, field.name)
                 self.write_field_begin(field, field.name)
                 if field.many:
                     self.write_resources(api, resources)
@@ -153,22 +169,19 @@ class Formatter(object):
                 self.write_field_end(field)
             else:
                 if isinstance(field, ForeignKey):
-                    fk = getattr(resource, field.attname)
+                    fk = getattr(container, field.attname)
                     if fk is None:
                         link = None
                     else:
                         link = "%s/%s/%s" % \
                         (api.base_uri, field.relation.desc.resource_name, fk)
                 else:
-                    primary_key = resource.primary_key_value()
+                    primary_key = container.primary_key_value()
                     link = "%s/%s/%s/%s" % \
-                    (api.base_uri, resource.desc.resource_name, primary_key, field.name)
+                    (api.base_uri, container.desc.resource_name, primary_key, field.name)
                 self.write_field_begin(field, field.name)
                 self.write_string(link)
                 self.write_field_end(field)
-
-        self.write_resource_end(resource)
-
 
     def read_dict_begin(self):
         pass
@@ -186,6 +199,12 @@ class Formatter(object):
         pass
         
     def read_resource_end(self, resource):
+        pass
+
+    def read_struct_begin(self):
+        pass
+        
+    def read_struct_end(self, struct):
         pass
 
     def read_field_begin(self):
@@ -230,7 +249,16 @@ class Formatter(object):
     def write_list_end(self):
         pass
 
+    def write_resource_begin(self, resource):
+        pass
+
     def write_resource_end(self, resource):
+        pass
+
+    def write_struct_begin(self, struct):
+        pass
+
+    def write_struct_end(self, struct):
         pass
     
     def write_field_begin(self, field, field_attname):

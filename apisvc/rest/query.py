@@ -64,7 +64,7 @@ class Query(object):
         excludes = excludes or []
         kwargs = {}
         nested_kwargs = []
-
+        
         for field in self.resource_class.desc.fields:
             if (field.primary_key and not include_primary_key) or \
                (field.readonly and not include_readonly) or \

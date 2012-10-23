@@ -30,19 +30,22 @@ class Field(object):
         self.hidden = hidden
         self.through = through
         self.to_model_method = to_model
+        
+        #Resource or Struct class
+        self.container_class = None
 
-        self.resource_class = None
         self.default = default
         self.attname = self.get_attname()
 
-    def contribute_to_class(self, resource_class, name):
+    def contribute_to_class(self, container_class, name):
+        self.container_class = container_class
         self.name = name
         self.model_name = self.model_name  or name
         self.attname = self.get_attname()
         self.model_attname = self.model_attname or self.get_attname()
-        self.resource_class = resource_class
-        self.model_class = self.model_class or self.resource_class.desc.model_class
-        resource_class.desc.add_field(self)
+        self.model_class = self.model_class or container_class.desc.model_class
+
+        container_class.desc.add_field(self)
     
     def has_default(self):
         return self.default is not self.NO_DEFAULT
@@ -174,3 +177,61 @@ class ListField(Field):
 
 class DictField(Field):
     pass
+
+class StructField(Field):
+    def __init__(self, struct_class, model_struct_class, **kwargs):
+        if "default" not in kwargs:
+            kwargs["default"] = lambda: struct_class()
+        super(StructField, self).__init__(**kwargs)
+        self.struct_class = struct_class
+        self.model_struct_class = model_struct_class
+    
+    def to_python(self, value):
+        result = None
+        if value is None:
+            result = None
+        elif isinstance(value, self.struct_class):
+            result = value
+        elif isinstance(value, dict):
+            result = self.struct_class(**value)
+        elif isinstance(value, self.model_struct_class):
+            kwargs = {}
+            for field in self.struct_class.desc.fields:
+                attribute = getattr(value, field.model_attname)
+                kwargs[field.attname] = field.to_python(attribute)
+            result = self.struct_class(**kwargs)
+        else:
+            raise ValidationError("invalid struct '%s'" % str(value))
+        return result
+    
+    def to_model(self, value):
+        result = None
+        if value is None:
+            result = None
+        elif isinstance(value, self.model_struct_class):
+            result = value
+        elif isinstance(value, self.struct_class):
+            kwargs = {}
+            for field in self.struct_class.desc.fields:
+                attribute = getattr(value, field.attname)
+                kwargs[field.model_attname] = field.to_model(attribute)
+            result = self.model_struct_class(**kwargs)
+        else:
+            raise ValidationError("invalid struct '%s'" % str(value))
+        return result
+
+    def validate(self, value):
+        value = super(StructField, self).validate(value)
+        for field in self.struct_class.desc.fields:
+            attribute = getattr(value, field.attname)
+            field_value = field.validate(attribute)
+            setattr(value, field.attname, field_value)
+        return value
+
+    def validate_for_model(self, value):
+        value = super(StructField, self).validate_for_model(value)
+        for field in self.struct_class.desc.fields:
+            attribute = getattr(value, field.model_attname)
+            field_value = field.validate_for_model(attribute)
+            setattr(value, field.model_attname, field_value)
+        return value
