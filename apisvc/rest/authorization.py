@@ -356,9 +356,8 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
                     pass
         else:
             #resources came from with relations.
-            #no easy to authorize resources except
-            #by issuing another query joining
-            #with user.
+            #no easy way to authorize resources except
+            #by issuing another query joining with user.
             if resources:
                 primary_keys = [r.primary_key_value() for r in resources]
                 primary_key_filter = "%s__in" % self.resource_class.desc.primary_key

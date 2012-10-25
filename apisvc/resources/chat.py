@@ -1,80 +1,69 @@
-from sqlalchemy.orm import joinedload
-
-from trsvcscore.db.models import ChatSession, ChatUser, Chat, ChatType
+from trsvcscore.db.enum import Enum
+from trsvcscore.db.models import Chat, ChatType
 from factory.db import db_session_factory
+from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
-from rest.authorization import PerUserResourceAuthorizer
-from rest.fields import IntegerField, StringField, ManyToMany, ForeignKey, DateTimeField, EncodedField, EncodedForeignKey, StructField
+from rest.authentication import SessionAuthenticator
+from rest.exceptions import ValidationError
 from rest.resource import Resource
-from rest.struct import Struct
-from resources.common import TopicResource
-from resources.django import UserResource
+from resources.topic import TopicResource
 
+class ChatTypeEnum(Enum):
+    model_class = ChatType
+    key_column = "name"
+    value_column = "id"
+    db_session_factory = db_session_factory
 
-class ChatTypeStruct(Struct):
-    class Meta:
-        model_class = ChatType
+class ChatTypeField(fields.StringField):
+    def to_model(self, value):
+        value = super(ChatTypeField, self).to_model(value)
+        if value in ChatTypeEnum.VALUES_TO_KEYS:
+            pass
+        elif value in ChatTypeEnum.KEYS_TO_VALUES:
+            value = ChatTypeEnum.KEYS_TO_VALUES[value]
+        else:
+            raise ValidationError("'%s' invalid type" % value)
+        return value
 
-    id = IntegerField(model_attname="id")
-    chatname = StringField(model_attname="name")
-    description= StringField()
+    def to_python(self, value):
+        value = super(ChatTypeField, self).to_python(value)
+        if value in ChatTypeEnum.KEYS_TO_VALUES:
+            pass
+        else:
+            try:
+                value = ChatTypeEnum.VALUES_TO_KEYS[int(value)]
+            except:
+                raise ValidationError("'%s' invalid type" % value)
+        return value
 
 class ChatResource(Resource):
     class Meta:
-        resource_name = "chat"
+        resource_name = "chats"
         model_class = Chat
-        methods = ["GET", "PUT"]
-        bulk_methods = ["GET", "PUT"]
+        methods = ["GET"]
+        bulk_methods = ["GET"]
         related_methods = {
             "topic": ["GET"],
         }
         filtering = {
             "id": ["eq"],
+            "type": ["eq"],
+            "start": ["eq", "lt", "lte", "gt", "gte"],
             r"chat_sessions\+__id": ["eq"],
         }    
         with_relations = ["topic"]
 
-    id = EncodedField(primary_key=True)
-    topic_id = IntegerField()
-    start = DateTimeField()
-    type = StructField(struct_class=ChatTypeStruct, model_struct_class=ChatType, readonly=True)
+    id = fields.EncodedField(primary_key=True)
+    type = ChatTypeField(model_attname="type_id")
+    topic_id = fields.IntegerField()
+    start = fields.DateTimeField()
+    end = fields.DateTimeField()
+    registration_start = fields.DateTimeField(nullable=True)
+    registration_end = fields.DateTimeField(nullable=True)
+    checkin_start = fields.DateTimeField(nullable=True)
+    checkin_end = fields.DateTimeField(nullable=True)
 
-    topic = ForeignKey(TopicResource, backref="chats")
-
-    objects = AlchemyResourceManager(db_session_factory)
-
-class ChatSessionResource(Resource):
-    class Meta:
-        resource_name = "chat_sessions"
-        model_class = ChatSession
-        methods = ["GET", "PUT", "POST", "DELETE"]
-        bulk_methods = ["GET", "POST"]
-        related_methods = {
-            "users": ["GET"],
-            "chatTest": ["GET"]
-        }
-        related_bulk_methods = {
-            "users": ["GET"],
-        }
-
-        filtering = {
-            "id": ["eq"],
-            "users__id": ["eq"],
-            "chatTest__id": ["eq"],
-            "tokenTest": ["eq"],
-        }    
-        with_relations = ["chatTest", "users"]
-        ordering = ["id", "tokenTest", "chatTest__id"]
-        limit = 20
-
-        alchemy_query_options = [joinedload(ChatSession.chat)]
-
-    id = EncodedField(primary_key=True)
-    tokenTest = StringField(model_attname="chat.id", readonly=True, model_class=Chat, through=Chat)
-    users = ManyToMany(UserResource, through=ChatUser, backref="chat_sessions")
-    chatTest_id = EncodedField(model_attname="chat_id")
-
-    chatTest = EncodedForeignKey(ChatResource, backref="chat_sessions+", model_name="chat", model_attname="chat_id")
+    topic = fields.ForeignKey(TopicResource, backref="chats")
 
     objects = AlchemyResourceManager(db_session_factory)
-    authorizer = PerUserResourceAuthorizer(UserResource, "users__id")
+    authenticator = SessionAuthenticator()

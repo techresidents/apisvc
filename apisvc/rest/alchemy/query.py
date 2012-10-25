@@ -51,7 +51,7 @@ class AlchemyQuery(Query):
             model_field = getattr(model, filter.operation.target_field.model_attname.rsplit(".", 1)[-1])
             operands = []
             for operand in filter.operation.operands:
-                operand = filter.operation.target_field.to_model(operand)
+                operand = filter.operation.target_field.validate_for_model(operand)
                 operands.append(operand)
             db_op = DB_OPERATIONS[filter.operation.name](model_field, *operands)
             query = query.filter(db_op)
@@ -107,10 +107,23 @@ class AlchemyQuery(Query):
                             m2m_joins.append(related_field.through)
                         m2m_joins.append(related_field.relation.desc.model_class)
                 else:
-                    related_field.model_name.strip("+")
+                    model_name = related_field.model_name.strip("+")
+                    #join through model_name attribute if present,
+                    #otherwise add join through model class.
+                    if hasattr(current.desc.model_class, model_name):
+                        joins.append(model_name)
+                    else:
+                        joins.append(related_field.relation.desc.model_class)
                 joins.extend(self._to_list(m2m_joins))
             else:
-                joins.append(related_field.model_name.strip("+"))
+                model_name = related_field.model_name.strip("+")
+                #join through model_name attribute if present,
+                #otherwise add join through model class.
+                if hasattr(current.desc.model_class, model_name):
+                    joins.append(model_name)
+                else:
+                    joins.append(related_field.relation.desc.model_class)
+
             current = related_field.relation
         
         if target_field and target_field.model_class is not current.desc.model_class:

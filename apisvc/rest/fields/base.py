@@ -3,6 +3,7 @@ import datetime
 import pytz
 
 from trpycore.encode.basic import basic_encode, basic_decode
+from trpycore.timezone import tz
 from rest.exceptions import ValidationError
 
 class Field(object):
@@ -150,6 +151,11 @@ class DateField(Field):
             result = value
         elif isinstance(value, datetime.datetime):
             result = datetime.date()
+        elif isinstance(value, basestring):
+            try:
+                result = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+            except:
+                raise ValidationError("invalid date '%s'" % str(value))
         else :
             raise ValidationError("invalid date '%s'" % str(value))
         return result
@@ -165,6 +171,11 @@ class DateTimeField(Field):
         elif isinstance(value, datetime.date):
             dt = datetime.datetime(value.year, value.month, value.day)
             result = dt.replace(tzinfo=pytz.utc)
+        elif isinstance(value, (int, float, basestring)):
+            try:
+                result = tz.timestamp_to_utc(float(value))
+            except:
+                raise ValidationError("invalid datetime '%s'" % str(value))
         else :
             raise ValidationError("invalid datetime '%s'" % str(value))
         return result

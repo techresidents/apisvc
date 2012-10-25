@@ -183,15 +183,20 @@ class JsonFormatter(Formatter):
         return context.read()
 
     def read_date(self):
+        value = None
         context = self.context_stack[-1]
         isodate = context.read()
-        return datetime.datetime.strptime(isodate, '%Y-%m-%d').date()
+        if isodate:
+            value = datetime.datetime.strptime(isodate, '%Y-%m-%d').date()
+        return value
 
     def read_datetime(self):
+        value = None
         context = self.context_stack[-1]
         timestamp = context.read()
-        result = tz.timestamp_to_utc(timestamp)
-        return result
+        if timestamp:
+            value = tz.timestamp_to_utc(timestamp)
+        return value
 
     def read_float(self):
         context = self.context_stack[-1]
@@ -317,12 +322,15 @@ class JsonFormatter(Formatter):
 
     def write_date(self, value):
         context = self.context_stack[-1]
+        if value:
+            value = value.isoformat()
         context.write(value.isoformat())
 
     def write_datetime(self, value):
         context = self.context_stack[-1]
-        timestamp = tz.utc_to_timestamp(value)
-        context.write(timestamp)
+        if value:
+            value = tz.utc_to_timestamp(value)
+        context.write(value)
 
     def write_float(self, value):
         context = self.context_stack[-1]

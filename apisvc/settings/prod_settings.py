@@ -38,6 +38,11 @@ RIAK_PORT = 8087
 RIAK_SESSION_BUCKET = "tr_sessions"
 RIAK_SESSION_POOL_SIZE = 4
 
+#Rackspace CDN settings
+CDN_URL = 'http://e76e4391c97b2f87b5c0-092292abadceda5fbd10b6de4be44b7f.r11.cf1.rackcdn.com'
+CDN_SSL_URL = 'https://ca6ad98c8e86bf5d358c-092292abadceda5fbd10b6de4be44b7f.ssl.cf1.rackcdn.com'
+CDN_STREAMING_URL = 'http://6dd2d3a4982fca439ed9-092292abadceda5fbd10b6de4be44b7f.r11.stream.cf1.rackcdn.com'
+
 #Logging settings
 LOGGING = {
     "version": 1,
