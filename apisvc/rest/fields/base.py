@@ -88,14 +88,18 @@ class Field(object):
 class StringField(Field):
     def to_python(self, value):
         result = value
-        if not isinstance(value, basestring):
+        if value is None:
+            pass
+        elif not isinstance(value, basestring):
             result = str(value)
         return result
 
 class EncodedField(StringField):
     def to_python(self, value):
         result = value
-        if isinstance(value, int):
+        if value is None:
+            pass
+        elif isinstance(value, int):
             result = basic_encode(value)
         elif not isinstance(value, basestring):
             result = str(value)
@@ -103,7 +107,9 @@ class EncodedField(StringField):
 
     def to_model(self, value):
         result = value
-        if isinstance(value, basestring):
+        if value is None:
+            pass
+        elif isinstance(value, basestring):
             result = basic_decode(value)
         return result
 
@@ -131,15 +137,19 @@ class FloatField(Field):
 
 class BooleanField(Field):
     def to_python(self, value):
-        if value in (True, False):
+        result = value
+        if value is None:
+            pass
+        elif value in (True, False):
             #if 0 or 1 convert to bool
-            return bool(value)
+            result = bool(value)
         elif value in ["t", "T",  "True", "true", "1"]:
-            return True
+            result = True
         elif value in ["f", "F", "False", "false", "0"]:
-            return False
+            result = False
         else:
             raise ValidationError("invalid boolean '%s'" % str(value))
+        return result
 
 class DateField(Field):
     def to_python(self, value):

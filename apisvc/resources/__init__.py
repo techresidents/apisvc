@@ -6,3 +6,5 @@ from resources.chat import ChatResource
 from resources.chat_session import ChatSessionResource
 from resources.skill import SkillResource
 from resources.archive import ArchiveResource
+from resources.position_pref import PositionPreferenceResource
+from resources.chat_minute import ChatMinuteResource

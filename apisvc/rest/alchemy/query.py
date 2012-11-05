@@ -68,8 +68,14 @@ class AlchemyQuery(Query):
         return query
     
     def _apply_slices(self, query):
+        limit = self.resource_class.desc.allowed_limit
         if self.slices is not None:
-            query = query.slice(*self.slices)
+            start, stop = self.slices
+            if (stop-start) > limit:
+                raise InvalidQuery("max limit exceeded")
+        else:
+            self.slices = (0, limit)
+        query = query.slice(*self.slices)
         return query
 
     def _apply_with_relations(self, resources):

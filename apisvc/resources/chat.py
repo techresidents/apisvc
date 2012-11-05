@@ -1,3 +1,4 @@
+from trpycore.timezone import tz
 from trsvcscore.db.enum import Enum
 from trsvcscore.db.models import Chat, ChatType
 from factory.db import db_session_factory
@@ -36,6 +37,14 @@ class ChatTypeField(fields.StringField):
                 raise ValidationError("'%s' invalid type" % value)
         return value
 
+class ChatManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(ChatManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        kwargs["end__lt"] = tz.utcnow()
+        return super(ChatManager, self).build_all_query(**kwargs) 
+
 class ChatResource(Resource):
     class Meta:
         resource_name = "chats"
@@ -49,6 +58,7 @@ class ChatResource(Resource):
             "id": ["eq"],
             "type": ["eq"],
             "start": ["eq", "lt", "lte", "gt", "gte"],
+            "end": ["eq", "lt", "lte", "gt", "gte"],
             r"chat_sessions\+__id": ["eq"],
         }    
         with_relations = ["topic"]
@@ -65,5 +75,5 @@ class ChatResource(Resource):
 
     topic = fields.ForeignKey(TopicResource, backref="chats")
 
-    objects = AlchemyResourceManager(db_session_factory)
+    objects = ChatManager(db_session_factory)
     authenticator = SessionAuthenticator()

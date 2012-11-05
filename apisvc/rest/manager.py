@@ -176,6 +176,7 @@ class ResourceManager(object):
         if arg in kwargs and kwargs[arg] != value:
             raise InvalidQuery("contradicting related filter")
         kwargs[arg] = value
+
         return kwargs
 
     def build_create_related_query(self, related_field, resource_instance, **kwargs):

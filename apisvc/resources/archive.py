@@ -78,6 +78,22 @@ class CdnUrlField(fields.StringField):
         value = "%s/%s" % (self.cdn_url, value)
         return value
 
+class ArchiveManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(ArchiveManager, self).__init__(*args, **kwargs)
+
+    def build_get_query(self, **kwargs):
+        kwargs["public"] = "True"
+        return super(ArchiveManager, self).build_get_query(**kwargs) 
+    
+    def build_one_query(self, **kwargs):
+        kwargs["public"] = "True"
+        return super(ArchiveManager, self).build_one_query(**kwargs) 
+
+    def build_all_query(self, **kwargs):
+        kwargs["public"] = "True"
+        return super(ArchiveManager, self).build_all_query(**kwargs) 
+
 class ArchiveResource(Resource):
     class Meta:
         resource_name = "archives"
@@ -87,6 +103,7 @@ class ArchiveResource(Resource):
 
         filtering = {
             "id": ["eq"],
+            "public": ["eq"],
             "chat_session__id": ["eq"]
         }    
 
@@ -106,6 +123,6 @@ class ArchiveResource(Resource):
 
     chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="archives", model_name="chat_session", model_attname="chat_session_id")
 
-    objects = AlchemyResourceManager(db_session_factory)
+    objects = ArchiveManager(db_session_factory)
     authenticator = SessionAuthenticator()
 

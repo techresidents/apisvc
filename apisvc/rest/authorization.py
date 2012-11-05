@@ -69,7 +69,7 @@ class ResourceAuthorizer(object):
                 if re.match(name_regex, name) and operation in operations:
                     break
             else:
-                msg = "'%s' not in %s' allowed filters %s" % \
+                msg = "'%s' not in %s allowed filters %s" % \
                         (name, resource_class_name, allowed_filters)
                 raise AuthorizationError(msg)
         
@@ -80,7 +80,7 @@ class ResourceAuthorizer(object):
                 if re.match(name_regex, name):
                     break
             else:
-                msg = "'%s' not in %s' allowed order bys %s" % \
+                msg = "'%s' not in %s allowed order bys %s" % \
                         (name, resource_class_name, allowed_order_bys)
                 raise AuthorizationError(msg)
 
@@ -91,10 +91,19 @@ class ResourceAuthorizer(object):
                 if re.match(name_regex, name):
                     break
             else:
-                msg = "'%s' not in %s' allowed with relations %s" % \
+                msg = "'%s' not in %s allowed with relations %s" % \
                         (name, resource_class_name, allowed_with_relations)
                 raise AuthorizationError(msg)
         
+        allowed_limit = resource_class.desc.allowed_limit
+        if not query.slices:
+            query.slice(0, allowed_limit)
+        else:
+            start, stop = query.slices
+            if (stop-start) > allowed_limit:
+                msg = "%s max limit exceeded" % resource_class_name
+                raise AuthorizationError(msg)
+
         return self.authorize_exact_query(context, request, query)
 
     def authorize_exact_query(self, context, request, query):
@@ -252,7 +261,170 @@ class ResourceAuthorizer(object):
         return response
 
     def authorize_delete_related_query_response(self, context, response, query):
+        return response
+
+
+class MacroResourceAuthorizer(ResourceAuthorizer):
+    def __init__(self, authorizers):
+        super(MacroResourceAuthorizer, self).__init__()
+        self.authorizers = authorizers
+
+    def authorize_request(self, context, request, **kwargs):
+        for auth in self.authorizers:
+            auth.authorize_request(context, request, **kwargs)
+    
+    def authorize_response(self, context, response, **kwargs):
+        for auth in self.authorizers:
+            response = auth.authorize_response(context, response, **kwargs)
+        return response
+
+    def authorize_query_resources(self, context, resources, query):
+        for auth in self.authorizers:
+            auth.authorize_query_resources(context, resources, query)
+
+    def authorize_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_query(context, request, query)
         return query
+
+    def authorize_exact_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_exact_query(context, request, query)
+        return query
+
+    def authorize_all_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_all_query(context, request, query)
+        return query
+
+    def authorize_one_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_one_query(context, request, query)
+        return query
+
+    def authorize_create_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_create_query(context, request, query)
+        return query
+
+    def authorize_bulk_create_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_bulk_create_query(context, request, query)
+        return query
+
+    def authorize_update_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_update_query(context, request, query)
+        return query
+
+    def authorize_bulk_update_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_bulk_update_query(context, request, query)
+        return query
+
+    def authorize_delete_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_delete_query(context, request, query)
+        return query
+
+    def authorize_bulk_delete_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_bulk_delete_query(context, request, query)
+        return query
+
+    def authorize_get_related_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_get_related_query(context, request, query)
+        return query
+
+    def authorize_create_related_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_create_related_query(context, request, query)
+        return query
+
+    def authorize_update_related_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_update_related_query(context, request, query)
+        return query
+
+    def authorize_delete_related_query(self, context, request, query):
+        for auth in self.authorizers:
+            query = auth.authorize_delete_related_query(context, request, query)
+        return query
+    
+    def authorize_query_response_resources(self, context, resources, query):
+        for auth in self.authorizers:
+            auth.authorize_query_response_resources(context, resources, query)
+
+    def authorize_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_query_response(context, response, query)
+        return response
+
+    def authorize_exact_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_exact_query_response(context, response, query)
+        return response
+
+    def authorize_all_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_all_query_response(context, response, query)
+        return response
+
+    def authorize_one_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_one_query_response(context, response, query)
+        return response
+
+    def authorize_create_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_create_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_create_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_bulk_create_query_response(context, response, query)
+        return response
+
+    def authorize_update_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_update_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_update_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_bulk_update_query_response(context, response, query)
+        return response
+
+    def authorize_delete_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_delete_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_delete_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_bulk_delete_query_response(context, response, query)
+        return response
+
+    def authorize_get_related_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_get_related_query_response(context, response, query)
+        return response
+
+    def authorize_create_related_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_create_related_query_response(context, response, query)
+        return response
+
+    def authorize_update_related_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_update_related_query_response(context, response, query)
+        return response
+
+    def authorize_delete_related_query_response(self, context, response, query):
+        for auth in self.authorizers:
+            response = auth.authorize_delete_related_query_response(context, response, query)
+        return response
 
 
 class PerUserResourceAuthorizer(ResourceAuthorizer):
@@ -344,7 +516,7 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
                 context=context,
                 resources=resources,
                 query=query)
-
+        
         if context.method in self.exclude_methods:
             return
 

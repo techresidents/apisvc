@@ -1,18 +1,45 @@
-from trsvcscore.db.models import Topic
+from trsvcscore.db.enum import Enum
+from trsvcscore.db.models import Topic, TopicType
 from trsvcscore.db.managers.tree import TreeManager
-
 from factory.db import db_session_factory
+from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
-from rest.fields import BooleanField, IntegerField, StringField, ForeignKey, RelatedField
+from rest.exceptions import ValidationError
 from rest.fields.related import RelatedDescriptor
 from rest.resource import Resource
 from rest.alchemy.query import AlchemyQuery
-
 from rest.authorization import PerUserResourceAuthorizer
+from resources.user import UserResource
 
-from resources.django import UserResource
+class TopicTypeEnum(Enum):
+    model_class = TopicType
+    key_column = "name"
+    value_column = "id"
+    db_session_factory = db_session_factory
 
-class TopicTreeField(RelatedField):
+class TopicTypeField(fields.StringField):
+    def to_model(self, value):
+        value = super(TopicTypeField, self).to_model(value)
+        if value in TopicTypeEnum.VALUES_TO_KEYS:
+            pass
+        elif value in TopicTypeEnum.KEYS_TO_VALUES:
+            value = TopicTypeEnum.KEYS_TO_VALUES[value]
+        else:
+            raise ValidationError("'%s' invalid type" % value)
+        return value
+
+    def to_python(self, value):
+        value = super(TopicTypeField, self).to_python(value)
+        if value in TopicTypeEnum.KEYS_TO_VALUES:
+            pass
+        else:
+            try:
+                value = TopicTypeEnum.VALUES_TO_KEYS[int(value)]
+            except:
+                raise ValidationError("'%s' invalid type" % value)
+        return value
+
+class TopicTreeField(fields.RelatedField):
     def __init__(self, relation, **kwargs):
         super(TopicTreeField, self).__init__(many=True, **kwargs)
         self.relation = relation
@@ -72,7 +99,7 @@ class TopicManager(AlchemyResourceManager):
 
 class TopicResource(Resource):
     class Meta:
-        resource_name = "topic"
+        resource_name = "topics"
         model_class = Topic
         methods = ["GET"]
         bulk_methods = ["GET"]
@@ -88,21 +115,21 @@ class TopicResource(Resource):
         ordering = ["id"]
         limit = 20
     
-    id = IntegerField(primary_key=True)
-    parent_id = IntegerField(nullable=True)
-    title = StringField()
-    description = StringField()
-    duration = IntegerField()
+    id = fields.IntegerField(primary_key=True)
+    parent_id = fields.IntegerField(nullable=True)
+    type = TopicTypeField(model_attname="type_id")
+    title = fields.StringField()
+    description = fields.StringField()
+    duration = fields.IntegerField()
     tree = TopicTreeField("self")
-    rank = IntegerField()
-    level = IntegerField(nullable=True)
-    user_id = IntegerField()
-    public = BooleanField()
-    type_id = IntegerField()
-    recommended_participants = IntegerField()
+    rank = fields.IntegerField()
+    level = fields.IntegerField(nullable=True)
+    user_id = fields.IntegerField()
+    public = fields.BooleanField()
+    recommended_participants = fields.IntegerField()
 
-    parent = ForeignKey("self", backref="children", nullable=True)
-    user = ForeignKey(UserResource, backref="topics+")
+    parent = fields.ForeignKey("self", backref="children", nullable=True)
+    user = fields.ForeignKey(UserResource, backref="topics+")
 
     objects = TopicManager(db_session_factory)
     authorizer = PerUserResourceAuthorizer(UserResource, "user_id", ["GET"])
