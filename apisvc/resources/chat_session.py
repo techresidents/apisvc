@@ -25,13 +25,17 @@ class ChatSessionResource(Resource):
         related_methods = {
             "users": ["GET"],
             "chat": ["GET"],
-            "archives": ["GET"]
+            "archives": ["GET"],
+            "speaking_markers": ["GET"],
+            "chat_tags": ["GET"],
+            "chat_minutes": ["GET"]
         }
         related_bulk_methods = {
             "users": ["GET"],
             "archives": ["GET"],
             "speaking_markers": ["GET"],
-            "chat_tags": ["GET"]
+            "chat_tags": ["GET"],
+            "chat_minutes": ["GET"]
         }
 
         filtering = {
