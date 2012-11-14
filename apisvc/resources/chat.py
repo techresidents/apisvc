@@ -65,7 +65,7 @@ class ChatResource(Resource):
 
     id = fields.EncodedField(primary_key=True)
     type = ChatTypeField(model_attname="type_id")
-    topic_id = fields.IntegerField()
+    topic_id = fields.EncodedField()
     start = fields.DateTimeField()
     end = fields.DateTimeField()
     registration_start = fields.DateTimeField(nullable=True)
@@ -73,7 +73,7 @@ class ChatResource(Resource):
     checkin_start = fields.DateTimeField(nullable=True)
     checkin_end = fields.DateTimeField(nullable=True)
 
-    topic = fields.ForeignKey(TopicResource, backref="chats")
+    topic = fields.EncodedForeignKey(TopicResource, backref="chats")
 
     objects = ChatManager(db_session_factory)
     authenticator = SessionAuthenticator()

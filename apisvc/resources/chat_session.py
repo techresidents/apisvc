@@ -29,21 +29,24 @@ class ChatSessionResource(Resource):
         }
         related_bulk_methods = {
             "users": ["GET"],
-            "archives": ["GET"]
+            "archives": ["GET"],
+            "speaking_markers": ["GET"],
+            "chat_tags": ["GET"]
         }
 
         filtering = {
             "id": ["eq"],
             "start": ["eq", "lt", "lte", "gt", "gte"],
             "end": ["eq", "lt", "lte", "gt", "gte"],
-            "users__id": ["eq"],
-            "chat__id": ["eq"]
+            "users__id": ["eq"]
         }    
         with_relations = [
             r"^archives$",
             r"^chat(__topic)?(__tree)?$",
             r"^users$",
-            r"^chat_minutes(__topic)?$"
+            r"^chat_minutes(__topic)?$",
+            r"^speaking_markers$",
+            r"^chat_tags$"
             ]
         ordering = ["id"]
         limit = 20

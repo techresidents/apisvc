@@ -55,12 +55,12 @@ class PositionPreferenceResource(Resource):
         limit = 20
 
     id = fields.IntegerField(primary_key=True)
-    user_id = fields.IntegerField()
+    user_id = fields.EncodedField()
     type = PositionTypeField(model_attname="position_type_id")
     salary_start = fields.IntegerField(nullable=True)
     salary_end = fields.IntegerField(nullable=True)
 
-    user = fields.ForeignKey(UserResource, backref="position_prefs", model_name="user", model_attname="user_id")
+    user = fields.EncodedForeignKey(UserResource, backref="position_prefs", model_name="user", model_attname="user_id")
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()

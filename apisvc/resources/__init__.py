@@ -8,3 +8,5 @@ from resources.skill import SkillResource
 from resources.archive import ArchiveResource
 from resources.position_pref import PositionPreferenceResource
 from resources.chat_minute import ChatMinuteResource
+from resources.speaking_marker import SpeakingMarkerResource
+from resources.chat_tag import ChatTagResource

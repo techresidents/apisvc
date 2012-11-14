@@ -15,7 +15,8 @@ class UserSanitizer(ResourceSanitizer):
 
     def sanitize_resources(self, context, resources):
         for resource in resources:
-            if context.user_id == resource.id:
+            field = resource.desc.fields_by_name['id']
+            if context.user_id == field.to_model(resource.id):
                 continue
             
             #remove personal info
@@ -59,7 +60,7 @@ class UserResource(Resource):
         ordering = []
         limit = 20
     
-    id = fields.IntegerField(primary_key=True)
+    id = fields.EncodedField(primary_key=True)
     first_name = fields.StringField()
     last_name = fields.StringField()
     email = fields.StringField(readonly=True)

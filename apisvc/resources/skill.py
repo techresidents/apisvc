@@ -61,11 +61,11 @@ class SkillResource(Resource):
 
     id = fields.IntegerField(primary_key=True)
     yrs_experience = fields.IntegerField()
-    user_id = fields.IntegerField()
+    user_id = fields.EncodedField()
     technology_id = fields.IntegerField()
     expertise = ExpertiseTypeField(model_attname="expertise_type_id")
 
-    user = fields.ForeignKey(UserResource, backref="skills", model_name="user", model_attname="user_id")
+    user = fields.EncodedForeignKey(UserResource, backref="skills", model_name="user", model_attname="user_id")
     technology = fields.ForeignKey(TechnologyResource, backref="skills+", model_name="technology", model_attname="technology_id")
 
     objects = AlchemyResourceManager(db_session_factory)

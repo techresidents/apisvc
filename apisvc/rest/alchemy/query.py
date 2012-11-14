@@ -1,3 +1,5 @@
+import inspect
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -107,7 +109,8 @@ class AlchemyQuery(Query):
                     if isinstance(related_field.through, (list, tuple)):
                         m2m_joins.extend(related_field.through)
                     else:
-                        if isinstance(related_field.through, Resource):
+                        if inspect.isclass(related_field.through) \
+                                and issubclass(related_field.through, Resource):
                             m2m_joins.append(related_field.through.desc.model_class)
                         else:
                             m2m_joins.append(related_field.through)
@@ -128,6 +131,15 @@ class AlchemyQuery(Query):
                 if hasattr(current.desc.model_class, model_name):
                     joins.append(model_name)
                 else:
+                    if related_field.through:
+                        if isinstance(related_field.through, (list, tuple)):
+                            joins.extend(related_field.through)
+                        else:
+                            if inspect.isclass(related_field.through) \
+                                    and issubclass(related_field.through, Resource):
+                                joins.append(related_field.through.desc.model_class)
+                            else:
+                                joins.append(related_field.through)
                     joins.append(related_field.relation.desc.model_class)
 
             current = related_field.relation

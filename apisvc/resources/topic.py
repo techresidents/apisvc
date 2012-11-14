@@ -86,7 +86,8 @@ class TopicManager(AlchemyResourceManager):
 
     def build_get_related_query(self, related_field, resource_instance, **kwargs):
         if related_field.name == "tree":
-            primary_key = resource_instance.primary_key_value()
+            field = resource_instance.desc.fields_by_name["id"]
+            primary_key = field.to_model(resource_instance.primary_key_value())
             return TopicTreeQuery(
                     resource_class=self.resource_class,
                     transaction_factory=self.transaction_factory,
@@ -115,8 +116,8 @@ class TopicResource(Resource):
         ordering = ["id"]
         limit = 20
     
-    id = fields.IntegerField(primary_key=True)
-    parent_id = fields.IntegerField(nullable=True)
+    id = fields.EncodedField(primary_key=True)
+    parent_id = fields.EncodedField(nullable=True)
     type = TopicTypeField(model_attname="type_id")
     title = fields.StringField()
     description = fields.StringField()
@@ -124,12 +125,12 @@ class TopicResource(Resource):
     tree = TopicTreeField("self")
     rank = fields.IntegerField()
     level = fields.IntegerField(nullable=True)
-    user_id = fields.IntegerField()
+    user_id = fields.EncodedField()
     public = fields.BooleanField()
     recommended_participants = fields.IntegerField()
 
-    parent = fields.ForeignKey("self", backref="children", nullable=True)
-    user = fields.ForeignKey(UserResource, backref="topics+")
+    parent = fields.EncodedForeignKey("self", backref="children", nullable=True)
+    user = fields.EncodedForeignKey(UserResource, backref="topics+")
 
     objects = TopicManager(db_session_factory)
     authorizer = PerUserResourceAuthorizer(UserResource, "user_id", ["GET"])
