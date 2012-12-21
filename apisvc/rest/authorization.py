@@ -97,7 +97,8 @@ class ResourceAuthorizer(object):
         
         allowed_limit = resource_class.desc.allowed_limit
         if not query.slices:
-            query.slice(0, allowed_limit)
+            if request.method() != "POST":
+                query.slice(0, allowed_limit)
         else:
             start, stop = query.slices
             if (stop-start) > allowed_limit:
@@ -507,6 +508,7 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
                 if related_field.relation is self.user_resource_class \
                     and not related_field.many:
                         user_id = getattr(resource, related_field.attname)
+                        user_id = related_field.validate_for_model(user_id)
                         if user_id != context.user_id:
                             raise AuthorizationError("invalid user id")
 
