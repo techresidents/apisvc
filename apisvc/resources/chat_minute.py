@@ -7,6 +7,15 @@ from rest.resource import Resource
 from resources.chat_session import ChatSessionResource
 from resources.topic import TopicResource
 
+class ChatMinuteManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(ChatMinuteManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "order_by" not in kwargs:
+            kwargs["order_by"] = "start"
+        return super(ChatMinuteManager, self).build_all_query(**kwargs) 
+
 class ChatMinuteResource(Resource):
     class Meta:
         resource_name = "chat_minutes"
@@ -36,6 +45,6 @@ class ChatMinuteResource(Resource):
     chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="chat_minutes", model_name="chat_session", model_attname="chat_session_id")
     topic = fields.EncodedForeignKey(TopicResource, model_name="topic", backref="+chat_minutes",  model_attname="topic_id")
 
-    objects = AlchemyResourceManager(db_session_factory)
+    objects = ChatMinuteManager(db_session_factory)
     authenticator = SessionAuthenticator()
 
