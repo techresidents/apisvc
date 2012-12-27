@@ -59,7 +59,7 @@ class UserResource(Resource):
             r"^skills(__technology)?$",
             r"^technology_prefs$",
             r"^position_prefs$",
-            r"^highlight_sessions$",
+            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$",
             ]
         ordering = []
         limit = 20

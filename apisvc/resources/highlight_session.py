@@ -24,7 +24,7 @@ class HighlightSessionResource(Resource):
             "user__id": ["eq"],
             "chat_session__id": ["eq"]
         }    
-        with_relations = ["user", "chat_session"]
+        with_relations = ["user", "chat_session__chat__topic"]
         ordering = ["id", "rank"]
         limit = 20
 
