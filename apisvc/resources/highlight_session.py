@@ -8,6 +8,15 @@ from rest.resource import Resource
 from resources.user import UserResource
 from resources.chat_session import ChatSessionResource
 
+class HighlightSessionManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(HighlightSessionManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "order_by" not in kwargs:
+            kwargs["order_by"] = "rank"
+        return super(HighlightSessionManager, self).build_all_query(**kwargs) 
+
 class HighlightSessionResource(Resource):
     class Meta:
         resource_name = "highlight_sessions"
@@ -36,6 +45,6 @@ class HighlightSessionResource(Resource):
     user = fields.EncodedForeignKey(UserResource, backref="highlight_sessions", model_name="user", model_attname="user_id")
     chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="highlight_sessions+", model_name="chat_session", model_attname="chat_session_id")
 
-    objects = AlchemyResourceManager(db_session_factory)
+    objects = HighlightSessionManager(db_session_factory)
     authenticator = SessionAuthenticator()
     authorizer = PerUserResourceAuthorizer(UserResource, "user_id", ["GET"])
