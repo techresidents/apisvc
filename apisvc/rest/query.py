@@ -1,3 +1,4 @@
+from rest.exceptions import InvalidQuery
 from rest.filter import Filter
 from rest.orderby import OrderBy
 from rest.utils.attribute import xgetattr, xsetattr
@@ -11,12 +12,15 @@ class Query(object):
         self.filters = []
         self.slices = None
         self.order_bys = []
+        self.order_arg = 'ASC'
         self.with_relations = []
     
     def parse(self, **kwargs):
         if "order_by" in kwargs:
             order_bys = kwargs.pop("order_by").split(",")
             self.order_by(*order_bys)
+        if "order" in kwargs:
+            self.order(kwargs.pop("order"))
         if "slice" in kwargs:
             slice_args = kwargs.pop("slice").split(",")
             slice_args = [int(s) for s in slice_args]
@@ -105,6 +109,14 @@ class Query(object):
             kwargs[arg] = None
         order_bys = OrderBy.parse(self.resource_class, **kwargs)
         self.order_bys.extend(order_bys)
+        return self
+    
+    def order(self, arg):
+        arg = arg.upper()
+        if arg in ["ASC", "DESC"]:
+            self.order_arg = arg
+        else:
+            raise InvalidQuery("invalid order '%s'" % arg)
         return self
 
     def with_relation(self, *args):
