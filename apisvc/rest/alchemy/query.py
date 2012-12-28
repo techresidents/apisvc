@@ -1,5 +1,6 @@
 import inspect
 
+from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -66,7 +67,10 @@ class AlchemyQuery(Query):
                 field = order_by.target_field
                 query = self._apply_joins(order_by.related_fields, field, query)
                 order_bys.append(getattr(field.model_class, field.model_attname.rsplit(".")[-1]))
-            query = query.order_by(*order_bys)
+            if self.order_arg == "DESC":
+                query = query.order_by(desc(*order_bys))
+            else:
+                query = query.order_by(*order_bys)
         return query
     
     def _apply_slices(self, query):

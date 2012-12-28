@@ -10,3 +10,4 @@ from resources.position_pref import PositionPreferenceResource
 from resources.chat_minute import ChatMinuteResource
 from resources.speaking_marker import SpeakingMarkerResource
 from resources.chat_tag import ChatTagResource
+from resources.highlight_session import HighlightSessionResource

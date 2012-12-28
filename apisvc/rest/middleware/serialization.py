@@ -53,8 +53,13 @@ class SerializationMiddleware(RestMiddleware):
     def process_response(self, context, response, **kwargs):
         if not response.successful:
             return response
+        
+        if not response.data:
+            response.data = ""
+            response.headers["cache-control"] = "no-cache"
+            response.headers["content-type"] = "text/plain"
 
-        if not isinstance(response.data, basestring):
+        elif response.data and not isinstance(response.data, basestring):
             content_type = context.request.header("content-type") \
                     or DEFAULT_CONTENT_TYPE
 
@@ -68,6 +73,7 @@ class SerializationMiddleware(RestMiddleware):
                     api=self.api,
                     resource=response.data,
                     format=format)
+
         return response
 
     def process_exception(self, context, request, exception, **kwargs):
