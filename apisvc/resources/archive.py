@@ -75,7 +75,8 @@ class CdnUrlField(fields.StringField):
         return value
     def to_python(self, value):
         value = super(CdnUrlField, self).to_model(value)
-        value = "%s/%s" % (self.cdn_url, value)
+        if value is not None:
+            value = "%s/%s" % (self.cdn_url, value)
         return value
 
 class ArchiveManager(AlchemyResourceManager):
@@ -120,6 +121,9 @@ class ArchiveResource(Resource):
     public = fields.BooleanField(readonly=True)
     length = fields.IntegerField(nullable=True, readonly=True)
     offset = fields.IntegerField(nullable=True, readonly=True)
+    waveform = fields.StringField(nullable=True, readonly=True)
+    waveform_path = fields.StringField(nullable=True, readonly=True)
+    waveform_url = CdnUrlField(cdn_url=CDN_URL, model_attname="waveform_path", nullable=True, readonly=True)
 
     chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="archives", model_name="chat_session", model_attname="chat_session_id")
 
