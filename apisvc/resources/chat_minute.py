@@ -43,7 +43,7 @@ class ChatMinuteResource(Resource):
     end = fields.DateTimeField()
 
     chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="chat_minutes", model_name="chat_session", model_attname="chat_session_id")
-    topic = fields.EncodedForeignKey(TopicResource, model_name="topic", backref="+chat_minutes",  model_attname="topic_id")
+    topic = fields.EncodedForeignKey(TopicResource, model_name="topic", backref="chat_minutes+",  model_attname="topic_id")
 
     objects = ChatMinuteManager(db_session_factory)
     authenticator = SessionAuthenticator()

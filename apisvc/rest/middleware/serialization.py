@@ -54,12 +54,12 @@ class SerializationMiddleware(RestMiddleware):
         if not response.successful:
             return response
         
-        if not response.data:
+        if response.data is None:
             response.data = ""
             response.headers["cache-control"] = "no-cache"
             response.headers["content-type"] = "text/plain"
 
-        elif response.data and not isinstance(response.data, basestring):
+        elif response.data is not None and not isinstance(response.data, basestring):
             content_type = context.request.header("content-type") \
                     or DEFAULT_CONTENT_TYPE
 

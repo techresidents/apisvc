@@ -3,8 +3,8 @@ from trsvcscore.db.models import Topic, TopicType
 from trsvcscore.db.managers.tree import TreeManager
 from factory.db import db_session_factory
 from rest import fields
+from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
-from rest.exceptions import ValidationError
 from rest.fields.related import RelatedDescriptor
 from rest.resource import Resource
 from rest.alchemy.query import AlchemyQuery
@@ -16,28 +16,6 @@ class TopicTypeEnum(Enum):
     key_column = "name"
     value_column = "id"
     db_session_factory = db_session_factory
-
-class TopicTypeField(fields.StringField):
-    def to_model(self, value):
-        value = super(TopicTypeField, self).to_model(value)
-        if value in TopicTypeEnum.VALUES_TO_KEYS:
-            pass
-        elif value in TopicTypeEnum.KEYS_TO_VALUES:
-            value = TopicTypeEnum.KEYS_TO_VALUES[value]
-        else:
-            raise ValidationError("'%s' invalid type" % value)
-        return value
-
-    def to_python(self, value):
-        value = super(TopicTypeField, self).to_python(value)
-        if value in TopicTypeEnum.KEYS_TO_VALUES:
-            pass
-        else:
-            try:
-                value = TopicTypeEnum.VALUES_TO_KEYS[int(value)]
-            except:
-                raise ValidationError("'%s' invalid type" % value)
-        return value
 
 class TopicTreeField(fields.RelatedField):
     def __init__(self, relation, **kwargs):
@@ -118,7 +96,7 @@ class TopicResource(Resource):
     
     id = fields.EncodedField(primary_key=True)
     parent_id = fields.EncodedField(nullable=True)
-    type = TopicTypeField(model_attname="type_id")
+    type = EnumField(TopicTypeEnum, model_attname="type_id")
     title = fields.StringField()
     description = fields.StringField()
     duration = fields.IntegerField()
