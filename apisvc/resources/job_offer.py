@@ -8,7 +8,7 @@ from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
 from resources.tenant import TenantResource
 from resources.user import UserResource
-from resources.requisition import RequisitionResource
+from resources.application import ApplicationResource
 
 class JobOfferStatusEnum(Enum):
     model_class = JobOfferStatus
@@ -31,14 +31,14 @@ class JobOfferResource(Resource):
     tenant_id = fields.EncodedField()
     candidate_id = fields.EncodedField()
     employee_id = fields.EncodedField()
-    requisition_id = fields.EncodedField()
+    application_id = fields.EncodedField()
     status = EnumField(JobOfferStatusEnum, model_attname="status_id")
     salary = fields.IntegerField()
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="job_offers")
     candidate = fields.EncodedForeignKey(UserResource, backref="job_offers")
     employee = fields.EncodedForeignKey(UserResource, backref="job_offers+")
-    requisition = fields.ForeignKey(RequisitionResource, backref="job_offers")
+    application = fields.ForeignKey(ApplicationResource, backref="job_offers")
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()

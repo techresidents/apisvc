@@ -14,10 +14,11 @@ from resources.chat_tag import ChatTagResource
 from resources.highlight_session import HighlightSessionResource
 from resources.requisition import RequisitionResource
 from resources.requisition_technology import RequisitionTechnologyResource
-from resources.interview_offer import InterviewOfferResource
 from resources.application import ApplicationResource
+from resources.application_log import ApplicationLogResource
 from resources.application_score import ApplicationScoreResource
 from resources.application_vote import ApplicationVoteResource
+from resources.interview_offer import InterviewOfferResource
 from resources.job_offer import JobOfferResource
 from resources.job_note import JobNoteResource
 from resources.job_event import JobEventResource
