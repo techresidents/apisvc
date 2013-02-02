@@ -28,12 +28,18 @@ class RequisitionResource(Resource):
         resource_name = "requisitions"
         model_class = JobRequisition
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST", "PUT"]
         filtering = {
             "id": ["eq"],
             "status": ["eq"]
-        }    
-        with_relations = []
+        }
+        related_methods = {
+            "requisition_technologies": ["GET"]
+        }
+        related_bulk_methods = {
+            "requisition_technologies": ["GET"]
+        }
+        with_relations = ["location", "requisition_technologies"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
