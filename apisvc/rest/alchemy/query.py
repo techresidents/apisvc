@@ -1,6 +1,6 @@
 import inspect
 
-from sqlalchemy import desc
+from sqlalchemy import asc, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -66,10 +66,11 @@ class AlchemyQuery(Query):
             for order_by in self.order_bys:
                 field = order_by.target_field
                 query = self._apply_joins(order_by.related_fields, field, query)
-                order_bys.append(getattr(field.model_class, field.model_attname.rsplit(".")[-1]))
-            if self.order_arg == "DESC":
-                query = query.order_by(desc(*order_bys))
-            else:
+                o = getattr(field.model_class, field.model_attname.rsplit(".")[-1])
+                if order_by.direction == 'DESC':
+                    order_bys.append(desc(o))
+                else:
+                    order_bys.append(asc(o))
                 query = query.order_by(*order_bys)
         return query
     

@@ -16,8 +16,7 @@ class ChatSessionManager(AlchemyResourceManager):
         kwargs["end__lt"] = tz.utcnow()
 
         if "order_by" not in kwargs:
-            kwargs["order"] = "DESC"
-            kwargs["order_by"] = "id"
+            kwargs["order_by"] = "id__desc"
 
         return super(ChatSessionManager, self).build_all_query(**kwargs) 
 
