@@ -14,8 +14,9 @@ class RequisitionTechnologyResource(Resource):
         methods = ["GET", "POST", "PUT"]
         bulk_methods = ["GET"]
         filtering = {
-            "id": ["eq"]
-        }    
+            "id": ["eq"],
+            "requisition__id": ["eq"]
+        }
         with_relations = []
 
     id = fields.EncodedField(primary_key=True)
