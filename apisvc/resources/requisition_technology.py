@@ -12,14 +12,17 @@ class RequisitionTechnologyResource(Resource):
         resource_name = "requisition_technologies"
         model_class = JobRequisitionTechnology
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST", "PUT"]
+        related_methods = {
+            "technology": ["GET"]
+        }
         filtering = {
             "id": ["eq"],
             "requisition__id": ["eq"]
         }
-        with_relations = []
+        with_relations = [r"^technology$"]
 
-    id = fields.EncodedField(primary_key=True)
+    id = fields.IntegerField(primary_key=True)
     requisition_id = fields.EncodedField()
     technology_id = fields.IntegerField()
     yrs_experience = fields.IntegerField()

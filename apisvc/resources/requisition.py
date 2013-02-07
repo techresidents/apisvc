@@ -39,7 +39,9 @@ class RequisitionResource(Resource):
         related_bulk_methods = {
             "requisition_technologies": ["GET"]
         }
-        with_relations = ["location", "requisition_technologies"]
+        with_relations = [
+            r"^location$",
+            r"^requisition_technologies(__technology)?$"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
