@@ -11,8 +11,8 @@ class RequisitionTechnologyResource(Resource):
     class Meta:
         resource_name = "requisition_technologies"
         model_class = JobRequisitionTechnology
-        methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST", "PUT"]
+        methods = ["GET", "POST", "PUT", "DELETE"]
+        bulk_methods = ["GET", "POST", "PUT", "DELETE"]
         related_methods = {
             "technology": ["GET"]
         }
