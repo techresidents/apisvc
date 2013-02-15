@@ -19,6 +19,11 @@ class ResourceManager(object):
         self.resource_class = resource_class
         resource_class.desc.manager = self
         setattr(resource_class, name, self)
+    
+    def uri(self, resource):
+        return "/%s/%s" % (
+                self.resource_class.desc.resource_name,
+                resource.primary_key_value())
 
     def uris(self):
         result = []

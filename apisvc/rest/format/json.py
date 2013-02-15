@@ -4,20 +4,30 @@ import json
 
 from trpycore.timezone import tz
 from rest.format.base import Formatter
+from rest.fields import Field
 
 class DictContext(object):
     def __init__(self, json_data=None, parent_context=None):
         self.parent_context = parent_context
         self.position = 0
+        self.key = None
         self.json_data = json_data
     def read(self):
-        key = self.json_data.keys()[self.position]
-        value = self.json_data[key]
-        self.position +=1
-        return {key, value}
+        result = None
+        if self.key is None:
+            self.key = self.json_data.keys()[self.position]
+            result = self.key
+        else:
+            result = self.json_data[self.key]
+            self.key = None
+            self.position += 1
+        return result
     def write(self, data):
-        key, value = data.items()[0]
-        self.json_data[key] = value
+        if self.key is None:
+            self.key = data
+        else:
+            self.json_data[self.key] = data
+            self.key = None
 
 class ListContext(object):
     def __init__(self, json_data=None, parent_context=None):
@@ -31,28 +41,8 @@ class ListContext(object):
     def write(self, data):
         self.json_data.append(data)
 
-class ResourceContext(object):
-    def __init__(self, resource, json_data=None, parent_context=None):
-        self.container = resource
-        self.resource = resource
-        self.json_data = json_data
-        self.parent_context = parent_context
-        self.position = 0
-    def read(self):
-        keys = self.json_data.keys()
-        key = keys[self.position]
-        value = self.json_data[key]
-        self.position += 1
-        result = {key: value}
-        return result
-    def write(self, v):
-        key, value = v.items()[0]
-        self.json_data[key] = value
-
 class StructContext(object):
-    def __init__(self, struct, json_data=None, parent_context=None):
-        self.container = struct
-        self.struct = struct
+    def __init__(self, json_data=None, parent_context=None):
         self.json_data = json_data
         self.parent_context = parent_context
         self.position = 0
@@ -68,12 +58,10 @@ class StructContext(object):
         self.json_data[key] = value
 
 class FieldContext(object):
-    def __init__(self, parent_context, json_data, field, field_attname):
+    def __init__(self, parent_context, json_data, field_attname):
         self.parent_context = parent_context
         self.json_data = json_data
-        self.field = field
         self.field_attname = field_attname
-        self.container = parent_context.container
     def read(self):
         value = self.json_data[self.field_attname]
         return value
@@ -81,9 +69,8 @@ class FieldContext(object):
         self.json_data[self.field_attname] = value
 
 class JsonFormatter(Formatter):
-    
-    def __init__(self, buffer):
-        self.buffer = buffer
+    def __init__(self, buffer, api=None):
+        super(JsonFormatter, self).__init__(buffer, api)
         self.context_stack = []
 
     def read_dict_begin(self):
@@ -116,62 +103,41 @@ class JsonFormatter(Formatter):
     def read_list_end(self):
         self.context_stack.pop()
 
-    def read_resource_begin(self):
+    def read_struct_begin(self):
         if self.context_stack:
             parent_context = self.context_stack[-1]
             json_data = parent_context.read()
         else:
             parent_context = None
             json_data = json.loads(self.buffer.read())
-        
-        meta = json_data.pop("meta")
-        resource_class = self.api.get_resource_class(meta["resource_name"])
-        resource = resource_class()
 
-        context = ResourceContext(
-                resource=resource,
+        context = StructContext(
                 json_data=json_data,
                 parent_context=parent_context)
 
         self.context_stack.append(context)
-        return resource, len(json_data.keys())
         
-    def read_resource_end(self, resource):
-        self.context_stack.pop()
-
-    def read_struct_begin(self):
-        field_context = self.context_stack[-1]
-        field = field_context.field
-        json_data = field_context.read()
-
-        struct = field.struct_class()
-
-        context = StructContext(
-                struct=struct,
-                json_data=json_data,
-                parent_context=field_context)
-
-        self.context_stack.append(context)
-        return struct, len(json_data.keys())
-        
-    def read_struct_end(self, struct):
+    def read_struct_end(self):
         self.context_stack.pop()
 
     def read_field_begin(self):
-        parent_context = self.context_stack[-1]
-        container = parent_context.container
-        json_data = parent_context.read()
         try:
+            if self.context_stack:
+                parent_context = self.context_stack[-1]
+                json_data = parent_context.read()
+            else:
+                parent_context = None
+                json_data = json.loads(self.buffer.read())
+            
             field_attname = json_data.keys()[0]
-            field = container.desc.fields_by_name[field_attname]
-        except KeyError:
-            field = container.desc.related_fields_by_name[field_attname]
+            context = FieldContext(parent_context, json_data, field_attname)
+            self.context_stack.append(context)
+            return field_attname
+        except IndexError:
+            return Field.STOP
 
-        context = FieldContext(parent_context, json_data, field, field_attname)
-        self.context_stack.append(context)
-        return field
 
-    def read_field_end(self, field):
+    def read_field_end(self):
         self.context_stack.pop()
 
     def read_dynamic(self):
@@ -227,6 +193,10 @@ class JsonFormatter(Formatter):
                 json_data=json_data)
         self.context_stack.append(context)
 
+    def write_dict_key(self, key):
+        context = self.context_stack[-1]
+        context.write_key(key)
+
     def write_dict_end(self):
         context = self.context_stack.pop()
         if not self.context_stack:
@@ -250,31 +220,7 @@ class JsonFormatter(Formatter):
         if not self.context_stack:
             self.buffer.write(json.dumps(context.json_data))
 
-    def write_resource_begin(self, resource):
-        json_data = {"meta": {
-            "resource_name": resource.desc.resource_name,
-            "resource_uri:": self.api.get_resource_uri(resource),
-            }
-        }
-
-        if self.context_stack:
-            parent_context = self.context_stack[-1]
-            parent_context.write(json_data)
-        else:
-            parent_context = None
-
-        context = ResourceContext(
-                resource=resource,
-                json_data=json_data,
-                parent_context=parent_context)
-        self.context_stack.append(context)
-
-    def write_resource_end(self, resource):
-        context = self.context_stack.pop()
-        if not self.context_stack:
-            self.buffer.write(json.dumps(context.json_data))
-
-    def write_struct_begin(self, struct):
+    def write_struct_begin(self):
         json_data = {}
 
         if self.context_stack:
@@ -284,17 +230,16 @@ class JsonFormatter(Formatter):
             parent_context = None
 
         context = StructContext(
-                struct=struct,
                 json_data=json_data,
                 parent_context=parent_context)
         self.context_stack.append(context)
 
-    def write_struct_end(self, struct):
+    def write_struct_end(self):
         context = self.context_stack.pop()
         if not self.context_stack:
             self.buffer.write(json.dumps(context.json_data))
-    
-    def write_field_begin(self, field, field_attname):
+
+    def write_field_begin(self, field_attname, field):
         if self.context_stack:
             parent_context = self.context_stack[-1]
             json_data = parent_context.json_data
@@ -305,13 +250,15 @@ class JsonFormatter(Formatter):
         context = FieldContext(
                 parent_context=parent_context,
                 json_data=json_data,
-                field=field,
                 field_attname=field_attname)
         self.context_stack.append(context)
 
-    def write_field_end(self, field):
-        self.context_stack.pop()
+    def write_field_stop(self):
+        pass
 
+    def write_field_end(self):
+        self.context_stack.pop()
+    
     def write_dynamic(self, value):
         context = self.context_stack[-1]
         context.write(value)

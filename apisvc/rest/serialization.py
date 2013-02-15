@@ -10,14 +10,14 @@ class ResourceSerializer(object):
         setattr(resource_class, name, self)
         self.resource_class = resource_class
 
-    def serialize(self, api, resource, format):
+    def serialize(self, api, resource_uri, resource, format):
         buffer = StringIO.StringIO()
-        formatter = self.formatter_factory.create(format, buffer)
-        formatter.write(api, resource)
+        formatter = self.formatter_factory.create(format, buffer, api)
+        resource.write(formatter, resource_uri)
         return buffer.getvalue()
     
-    def deserialize(self, api, data, format, result):
+    def deserialize(self, api, resource_uri, resource, format, data):
         buffer = StringIO.StringIO(data)
-        formatter = self.formatter_factory.create(format, buffer)
-        resource = formatter.read(api, result)
+        formatter = self.formatter_factory.create(format, buffer, api)
+        resource.read(formatter, resource_uri)
         return resource

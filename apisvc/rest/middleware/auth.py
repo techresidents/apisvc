@@ -2,6 +2,7 @@ import logging
 
 from rest.exceptions import AuthenticationError, AuthorizationError
 from rest.middleware.base import RestMiddleware
+from rest.resource import ResourceCollection
 from rest.utils.resource import loaded_resource_map
 from rest.response import Response
 
@@ -93,7 +94,7 @@ class AuthorizationMiddleware(RestMiddleware):
 
 class QueryAuthorizationMiddleware(RestMiddleware):
     def _to_list(self, value):
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, ResourceCollection):
             return value
         else:
             return [value]

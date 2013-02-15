@@ -17,8 +17,6 @@ class Query(object):
         if "order_by" in kwargs:
             order_bys = kwargs.pop("order_by").split(",")
             self.order_by(*order_bys)
-        if "order" in kwargs:
-            self.order(kwargs.pop("order"))
         if "slice" in kwargs:
             slice_args = kwargs.pop("slice").split(",")
             slice_args = [int(s) for s in slice_args]

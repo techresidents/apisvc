@@ -1,4 +1,4 @@
-from rest.fields.related import RelatedField
+from rest.fields.related import Field, RelatedField
 
 class StructDescription(object):
     def __init__(self, **kwargs):
@@ -101,3 +101,27 @@ class Struct(object):
         
         if kwargs:
             raise TypeError("'%s' is an invalid argument" % kwargs.keys()[0])
+
+    def read(self, formatter):
+        formatter.read_struct_begin()
+        while True:
+            field_name = formatter.read_field_begin()
+            if field_name == Field.STOP:
+                break
+            field = self.desc.fields_by_name[field_name]
+            field_value = field.validate(formatter.read_dynamic())
+            setattr(self, field.attname, field_value)
+            formatter.read_field_end()
+        formatter.write_struct_end()
+
+    def write(self, formatter):
+        write_fields = lambda fields: [f for f in fields if not f.hidden]
+
+        formatter.write_struct_begin()
+        for field in write_fields(self.desc.fields):
+            formatter.write_field_begin(field.attname, field)
+            field_value = getattr(self, field.attname)
+            field.write(formatter, field_value)
+            formatter.write_field_end()
+        formatter.write_field_stop()
+        formatter.write_struct_end()

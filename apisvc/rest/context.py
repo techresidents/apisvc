@@ -10,6 +10,7 @@ class RequestContext(object):
             request=None,
             data=None,
             bulk=False,
+            path=None,
             query=None):
         self.api = api
         self.session = session
@@ -21,6 +22,7 @@ class RequestContext(object):
         self.request = request
         self.data = data
         self.bulk = bulk 
+        self.path = path
         self.query = query
     
     def is_direct_resource(self):

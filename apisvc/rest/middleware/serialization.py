@@ -29,16 +29,18 @@ class SerializationMiddleware(RestMiddleware):
                     serializer = context.resource_class.serializer
                     context.data = serializer.deserialize(
                             api=self.api,
-                            data=body,
+                            resource_uri=context.path,
+                            resource=result,
                             format=format,
-                            result=result)
+                            data=body)
                 except:                
                     result = context.resource_class()
                     context.data = serializer.deserialize(
                             api=self.api,
-                            data=body,
+                            resource=result,
+                            resource_uri=context.path,
                             format=format,
-                            result=result)
+                            data=body)
                     context.bulk = False
             except ValidationError as error:
                 logging.warning(str(error))
@@ -72,6 +74,7 @@ class SerializationMiddleware(RestMiddleware):
             response.data = serializer.serialize(
                     api=self.api,
                     resource=response.data,
+                    resource_uri=context.path, 
                     format=format)
 
         return response

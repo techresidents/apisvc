@@ -1,9 +1,7 @@
-from rest.authentication import ResourceAuthenticator
-from rest.authorization import ResourceAuthorizer
-from rest.fields import RelatedField
-from rest.manager import ResourceManager
-from rest.sanitization import ResourceSanitizer
-from rest.serialization import ResourceSerializer
+from rest.fields import Field, BooleanField, IntegerField, \
+        ListField, StringField, StructField, UriField, \
+        RelatedField, ForeignKey
+from rest.struct import Struct
 
 class ResourceDescription(object):
     def __init__(self, **kwargs):
@@ -32,6 +30,7 @@ class ResourceDescription(object):
         self.manager = None
         self.sanitizer = None
         self.serializer = None
+        self.resource_collection_class = None
 
         self.update(**kwargs)
 
@@ -105,8 +104,8 @@ class ResourceMeta(type):
         new_class.add_to_class("desc", ResourceDescription(**desc_kwargs))
         
         #Add class attributes to new class
-        for name, value in attributes.items():
-            new_class.add_to_class(name, value)
+        for key, value in attributes.items():
+            new_class.add_to_class(key, value)
         
         #Add parent fields to new class.
         #Note that currently we do not add any other
@@ -115,18 +114,38 @@ class ResourceMeta(type):
             if parent.desc.abstract:
                 for field in parent.desc.fields:
                     new_class.desc.add_field(field)
+
         
         #Add defaults if subclassed versions not provided
         if new_class.desc.manager is None:
+            from rest.manager import ResourceManager
             new_class.add_to_class("objects",  ResourceManager())
         if new_class.desc.authenticator is None:
+            from rest.authentication import ResourceAuthenticator
             new_class.add_to_class("authenticator", ResourceAuthenticator())
         if new_class.desc.authorizer is None:
+            from rest.authorization import ResourceAuthorizer
             new_class.add_to_class("authorizer", ResourceAuthorizer())
         if new_class.desc.sanitizer is None:
+            from rest.sanitization import ResourceSanitizer
             new_class.add_to_class("sanitizer", ResourceSanitizer())
         if new_class.desc.serializer is None:
+            from rest.serialization import ResourceSerializer
             new_class.add_to_class("serializer", ResourceSerializer())
+        
+        #Add collection if subclassed version does not exist
+        if new_class.desc.resource_collection_class is None:
+            #dynamically create ResourceCollectionBase subclass
+            resource_collection_class_attributes = {
+                "__module__": ResourceCollection.__module__
+            }
+            
+            resource_collection_class = type(
+                    name+"Collection",
+                    (ResourceCollection,),
+                    resource_collection_class_attributes)
+
+            new_class.add_to_class("Collection", resource_collection_class)
         
         return new_class
 
@@ -135,6 +154,72 @@ class ResourceMeta(type):
             value.contribute_to_class(cls, name)
         else:
             setattr(cls, name, value)
+
+
+class ResourceCollection(object):
+    @classmethod
+    def contribute_to_class(cls, resource_class, name):
+        cls.resource_class = resource_class
+        resource_class.desc.resource_collection_class = cls
+        setattr(resource_class, name, cls)
+
+    def __init__(self, resources=None):
+        self.total_count = 0
+        self.collection = list(resources) if resources else []
+    
+    def __iter__(self):
+        return iter(self.collection)
+
+    def __len__(self):
+        return len(self.collection)
+
+    def append(self, resource):
+        self.collection.append(resource)
+    
+    def extend(self, resources):
+        self.collection.extend(resources)
+    
+    def read(self, formatter, resource_uri=None):
+        formatter.read_struct_begin()
+        while True:
+            field_name = formatter.read_field_begin()
+            if field_name == Field.STOP:
+                break
+            elif field_name == "meta":
+                ResourceMetaStruct().read(formatter)
+            elif field_name == "results":
+                length = formatter.read_list_begin()
+                for i in range(length):
+                    resource = self.resource_class()
+                    resource.read(formatter)
+                    self.append(resource)
+                formatter.read_list_end()
+            else:
+                raise RuntimeError("read invalid field: %s" % field_name)
+            formatter.read_field_end()
+        formatter.read_struct_end()
+
+    def write(self, formatter, resource_uri=None):
+        resource_uri = resource_uri or "/%s" % self.resource_class.desc.resource_name
+
+        formatter.write_struct_begin()
+        formatter.write_field_begin("meta", StructField)
+        ResourceMetaStruct(
+            resource_name=self.resource_class.desc.resource_name,
+            resource_uri=resource_uri,
+            loaded=True,
+            many=True,
+            total_count=self.total_count
+        ).write(formatter)
+        formatter.write_field_end()
+        formatter.write_field_begin("results", ListField)
+        formatter.write_list_begin(len(self))
+        for resource in self:
+            resource.write(formatter)
+        formatter.write_list_end()
+        formatter.write_field_end()
+        formatter.write_struct_end()
+
 
 class ResourceBase(object):
     __metaclass__ = ResourceMeta
@@ -164,14 +249,116 @@ class ResourceBase(object):
         return self.desc.primary_key
 
     def primary_key_value(self):
-        return getattr(self, self.primary_key_name())
+        primary_key_name = self.primary_key_name()
+        if primary_key_name:
+            return getattr(self, primary_key_name)
+        else:
+            return None
     
+    def uri(self):
+        manager = self.desc.manager
+        return manager.uri(self)
+        
     def save(self):
         manager = self.desc.manager
         if self.primary_key_value():
             manager.update(resource=self)
         else:
             manager.create(resource=self)
+    
+    def read(self, formatter, resource_uri=None):
+        fields_read = 0
+        formatter.read_struct_begin()
+        while True:
+            field_name = formatter.read_field_begin()
+            if field_name == Field.STOP:
+                break
+            elif field_name == "meta":
+                ResourceMetaStruct().read(formatter)
+            elif field_name in self.desc.fields_by_name:
+                field = self.desc.fields_by_name[field_name]
+                field_value = field.read(formatter)
+                fields_read += 1
+                setattr(self, field_name, field_value)
+            elif field_name in self.desc.related_fields_by_name:
+                fields_read += 1
+                field = self.desc.related_fields_by_name[field_name]
+                if field.many:
+                    resources = field.relation.Collection()
+                    resources.read(formatter)
+                    if len(resources):
+                        setattr(self, field_name, resources)
+                else:
+                    resource = field.relation()
+                    if resource.read(formatter):
+                        setattr(self, field_name, resource)
+            else:
+                raise RuntimeError("read invalid field: %s" % field_name)
+            field_name = formatter.read_field_end()
+        formatter.read_struct_end()
+        return fields_read
+
+    def write(self, formatter, resource_uri=None):
+        resource_uri = resource_uri or self.uri()
+
+        write_fields = lambda fields: [f for f in fields if not f.hidden]
+
+        formatter.write_struct_begin()
+       
+        formatter.write_field_begin("meta", StructField)        
+        ResourceMetaStruct(
+                resource_name=self.desc.resource_name,
+                resource_uri=resource_uri,
+                loaded=True,
+                many=False,
+                total_count=1
+                ).write(formatter)
+        formatter.write_field_end()
+        
+        for field in write_fields(self.desc.fields):
+            formatter.write_field_begin(field.attname, field)
+            field.write(formatter, getattr(self, field.attname))
+            formatter.write_field_end()
+
+        for field in write_fields(self.desc.related_fields):
+            related_descriptor = getattr(self.__class__, field.name)
+
+            if related_descriptor.is_loaded(self):
+                resources = getattr(self, field.name)
+                formatter.write_field_begin(field.name, field)
+                if field.many:
+                    resources.write(
+                            formatter,
+                            "%s/%s" % (resource_uri, field.name))
+                else:
+                    resources.write(formatter)
+                formatter.write_field_end()
+            else:
+                if isinstance(field, ForeignKey):
+                    fk = getattr(self, field.attname)
+                    if fk is None:
+                        link = None
+                    else:
+                        link = "/%s/%s" % (field.relation.desc.resource_name, fk)
+                else:
+                    link = "%s/%s" % (resource_uri, field.name)
+                
+                formatter.write_field_begin(field.name, field)
+                formatter.write_struct_begin()
+                formatter.write_field_begin("meta", StructField)
+                ResourceMetaStruct(
+                        resource_name=field.relation.desc.resource_name,
+                        resource_uri=link,
+                        loaded=False,
+                        many=field.many,
+                        total_count=None if field.many else 1
+                        ).write(formatter)
+                formatter.write_field_end()
+                formatter.write_struct_end()
+                formatter.write_field_end()
+        
+        formatter.write_field_stop()
+        formatter.write_struct_end()
 
 
 from schema import SchemaResourceBase, SchemaResourceManager
@@ -193,6 +380,12 @@ class SchemaMeta(ResourceMeta):
         new_class.add_to_class("schema", schema_class())
         return new_class
 
-
 class Resource(ResourceBase):
     __metaclass__ = SchemaMeta
+
+class ResourceMetaStruct(Struct):
+    resource_name = StringField()
+    resource_uri = UriField(nullable=True)
+    loaded = BooleanField()
+    many = BooleanField()
+    total_count = IntegerField(nullable=True)

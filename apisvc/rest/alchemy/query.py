@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ManyToMany
 from rest.query import Query
-from rest.resource import Resource
+from rest.resource import Resource, ResourceCollection
 
 DB_OPERATIONS = {
     "eq": lambda c, v: c == v,
@@ -33,7 +33,7 @@ class AlchemyQuery(Query):
                 resource_class=resource_class,
                 transaction_factory=transaction_factory)
 
-    def _build_query(self, db_session):
+    def _build_query(self, db_session, is_count=False):
         query = db_session.query(self.resource_class.desc.model_class)
         try:
             #Set optional alchemy query options if provided.
@@ -43,9 +43,14 @@ class AlchemyQuery(Query):
         except AttributeError:
             pass
         query = self._apply_filters(query)
-        query = self._apply_order_bys(query)
-        query = self._apply_slices(query)
+
+        if not is_count:
+            query = self._apply_order_bys(query)
+            query = self._apply_slices(query)
         return query
+
+    def _build_count_query(self, db_session):
+        return self._build_query(db_session, is_count=True)
 
     def _apply_filters(self, query):
         for filter in self.filters:
@@ -89,11 +94,11 @@ class AlchemyQuery(Query):
         for with_relation in self.with_relations:
             current = resources
             for related_field in with_relation.related_fields:
-                if isinstance(current, (list, tuple)):
-                    new_current = []
+                if isinstance(current, ResourceCollection):
+                    new_current = ResourceCollection()
                     for obj in current:
                         result = getattr(obj, related_field.name)
-                        if isinstance(result, (list, tuple)):
+                        if isinstance(result, ResourceCollection):
                             new_current.extend(result)
                         else:
                             new_current.append(result)
@@ -187,13 +192,15 @@ class AlchemyQuery(Query):
 
     def all(self):
         with self.transaction_factory() as db_session:
-            results = []
+            results = self.resource_class.Collection()
 
             query = self._build_query(db_session)
             for model in query.all():
                 results.append(self.model_to_resource(model))
             self._apply_with_relations(results)
-
+            
+            results.total_count = self._build_count_query(db_session).count()
+            
             return results
 
     def create(self, **kwargs):
