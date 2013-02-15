@@ -31,7 +31,7 @@ class CdnUrlField(fields.StringField):
         return value
     def to_python(self, value):
         value = super(CdnUrlField, self).to_model(value)
-        if value is not None:
+        if value is not None and not value.startswith(self.cdn_url):
             value = "%s/%s" % (self.cdn_url, value)
         return value
 

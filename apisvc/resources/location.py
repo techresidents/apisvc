@@ -13,9 +13,11 @@ class LocationResource(Resource):
         bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
-            r"users\+__id": ["eq"]
+            r"users\+__id": ["eq"],
+            "city": ["eq", "in"]
         }
         limit = 20
+        ordering = ["city", "state"]
     
     id = fields.IntegerField(primary_key=True)
     country = fields.StringField()

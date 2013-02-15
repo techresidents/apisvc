@@ -31,7 +31,8 @@ class ApplicationResource(Resource):
         filtering = {
             "id": ["eq"]
         }    
-        with_relations = []
+        with_relations = ['requisition']
+        ordering = ['created', 'status', 'requisition__status']
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()

@@ -48,12 +48,13 @@ class TopicTreeQuery(TopicQuery):
     
     def all(self):
         with self.transaction_factory() as db_session:
-            results = []
+            results = TopicResource.Collection()
             tree_manager = TreeManager(self.resource_class.desc.model_class)
             for model, level in tree_manager.tree_by_rank(db_session, self.primary_key):
                 resource = self.model_to_resource(model)
                 resource.level = level
                 results.append(resource)
+            results.total_count = len(results)
             return results
 
 class TopicManager(AlchemyResourceManager):
@@ -91,6 +92,10 @@ class TopicResource(Resource):
             "children": ["eq"],
             "parent": ["eq"],
         }    
+        with_relations = [
+            r"^tree$",
+            r"^children$",
+            ]
         ordering = ["id"]
         limit = 20
     
