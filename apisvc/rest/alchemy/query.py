@@ -217,8 +217,8 @@ class AlchemyQuery(Query):
                 db_session.add(model)
                 db_session.flush()
                 return self.model_to_resource(model, resource)
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid create query: %s" % str(error))
 
     def update(self, **kwargs):
         resource = kwargs.pop("resource", None)
@@ -230,8 +230,8 @@ class AlchemyQuery(Query):
                 model = query.one()
                 self.resource_to_model(resource, model)
                 return self.model_to_resource(model, resource)
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid update query: %s" % str(error))
 
     def delete(self):
         with self.transaction_factory() as db_session:
@@ -256,8 +256,8 @@ class AlchemyQuery(Query):
                     self.model_to_resource(model, resource)
 
                 return resources
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid bulk create query: %s" % str(error))
 
     def bulk_update(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]
@@ -285,8 +285,8 @@ class AlchemyQuery(Query):
                     model = model_map[getattr(resource, model_pk_name)]
                     self.model_to_resource(model, resource)
                 return resources
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid bulk update query: %s" % str(error))
 
     def bulk_delete(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]

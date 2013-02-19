@@ -103,14 +103,14 @@ class StringField(Field):
         return result
 
     def read(self, formatter):
-        return formatter.read_string()
+        return self.validate(formatter.read_string())
 
     def write(self, formatter, value):
         formatter.write_string(self.validate(value))
 
 class UriField(Field):
     def read(self, formatter):
-        return formatter.read_uri()
+        return self.validate(formatter.read_uri())
 
     def write(self, formatter, value):
         formatter.write_uri(self.validate(value))
@@ -146,7 +146,7 @@ class IntegerField(Field):
             raise ValidationError("invalid integer '%s'" % str(value))
 
     def read(self, formatter):
-        return formatter.read_integer()
+        return self.validate(formatter.read_integer())
 
     def write(self, formatter, value):
         formatter.write_integer(self.validate(value))
@@ -163,7 +163,7 @@ class FloatField(Field):
             raise ValidationError("invalid integer '%s'" % str(value))
 
     def read(self, formatter):
-        return formatter.read_float()
+        return self.validate(formatter.read_float())
 
     def write(self, formatter, value):
         formatter.write_float(self.validate(value))
@@ -185,7 +185,7 @@ class BooleanField(Field):
         return result
 
     def read(self, formatter):
-        return formatter.read_boolean()
+        return self.validate(formatter.read_boolean())
 
     def write(self, formatter, value):
         formatter.write_boolean(self.validate(value))
@@ -210,7 +210,7 @@ class DateField(Field):
         return result
 
     def read(self, formatter):
-        return formatter.read_date()
+        return self.validate(formatter.read_date())
 
     def write(self, formatter, value):
         formatter.write_date(self.validate(value))
@@ -236,14 +236,14 @@ class DateTimeField(Field):
         return result
 
     def read(self, formatter):
-        return formatter.read_datetime()
+        return self.validate(formatter.read_datetime())
 
     def write(self, formatter, value):
         formatter.write_datetime(self.validate(value))
 
 class TimestampField(FloatField):
     def read(self, formatter):
-        return formatter.read_timestamp()
+        return self.validate(formatter.read_timestamp())
 
     def write(self, formatter, value):
         self.write_timestamp(self.validate(value))
@@ -278,7 +278,6 @@ class DictField(Field):
     def write(self, formatter, values):
         formatter.write_dict_begin(len(values))
         for key,value in values.items():
-            "WRITING"
             formatter.write_dynamic(key)
             formatter.write_dynamic(value)
         formatter.write_dict_end()
@@ -349,7 +348,7 @@ class StructField(Field):
             if field_name == Field.STOP:
                 break
             field = self.struct_class.desc.fields_by_name[field_name]
-            field_value = field.validate(formatter.read_dynamic())
+            field_value = field.read(formatter)
             setattr(result, field.attname, field_value)
             formatter.read_field_end()
         formatter.write_struct_end()

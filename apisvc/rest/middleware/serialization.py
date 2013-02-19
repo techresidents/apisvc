@@ -71,10 +71,11 @@ class SerializationMiddleware(RestMiddleware):
                     % FORMAT_CONTENT_TYPE[format]
 
             serializer = context.resource_class.serializer
+            resource_uri = context.path if context.method == "GET" else None
             response.data = serializer.serialize(
                     api=self.api,
                     resource=response.data,
-                    resource_uri=context.path, 
+                    resource_uri=resource_uri,
                     format=format)
 
         return response
