@@ -31,6 +31,7 @@ class RequisitionResource(Resource):
         bulk_methods = ["GET", "POST", "PUT"]
         filtering = {
             "id": ["eq"],
+            "tenant__id": ["eq"],
             "status": ["eq"]
         }
         related_methods = {
@@ -41,7 +42,9 @@ class RequisitionResource(Resource):
         }
         with_relations = [
             r"^location$",
-            r"^requisition_technologies(__technology)?$"]
+            r"^requisition_technologies(__technology)?$"
+        ]
+        ordering = ["title", "status"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
@@ -57,7 +60,7 @@ class RequisitionResource(Resource):
     relocation = fields.BooleanField()
     employer_requisition_identifier = fields.StringField(nullable=True)
 
-    tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions+")
+    tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions")
     user = fields.EncodedForeignKey(UserResource, backref="requisitions")
     location = fields.ForeignKey(LocationResource, backref="requisitions+")
     technologies = fields.ManyToMany(TechnologyResource, through=JobRequisitionTechnology, backref="requisitions+")
