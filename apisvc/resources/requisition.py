@@ -44,12 +44,13 @@ class RequisitionResource(Resource):
             r"^location$",
             r"^requisition_technologies(__technology)?$"
         ]
-        ordering = ["title", "status"]
+        ordering = ["created", "title", "status"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     location_id = fields.IntegerField()
+    created = fields.DateTimeField()
     status = EnumField(RequisitionStatusEnum, model_attname="status_id")
     position_type = EnumField(PositionTypeEnum, model_attname="position_type_id")
     title = fields.StringField()
