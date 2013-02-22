@@ -44,7 +44,13 @@ class RequisitionResource(Resource):
             r"^location$",
             r"^requisition_technologies(__technology)?$"
         ]
-        ordering = ["created", "title", "status"]
+        ordering = [
+            "created",
+            "employer_requisition_identifier",
+            "title",
+            "status",
+            "location__state"
+        ]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
