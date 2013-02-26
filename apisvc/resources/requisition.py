@@ -11,6 +11,26 @@ from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
 from resources.user import UserResource
 
+class RequisitionManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(RequisitionManager, self).__init__(*args, **kwargs)
+
+    def build_get_query(self, **kwargs):
+        if "deleted" not in kwargs:
+            kwargs["deleted"] = False
+        return super(RequisitionManager, self).build_get_query(**kwargs)
+
+    def build_one_query(self, **kwargs):
+        if "deleted" not in kwargs:
+            kwargs["deleted"] = False
+        return super(RequisitionManager, self).build_one_query(**kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "deleted" not in kwargs:
+            kwargs["deleted"] = False
+        return super(RequisitionManager, self).build_all_query(**kwargs)
+
+
 class RequisitionStatusEnum(Enum):
     model_class = JobRequisitionStatus
     key_column = "name"
@@ -27,12 +47,13 @@ class RequisitionResource(Resource):
     class Meta:
         resource_name = "requisitions"
         model_class = JobRequisition
-        methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST", "PUT"]
+        methods = ["GET", "POST", "PUT", "DELETE"]
+        bulk_methods = ["GET", "POST", "PUT", "DELETE"]
         filtering = {
             "id": ["eq"],
             "tenant__id": ["eq"],
-            "status": ["eq"]
+            "status": ["eq"],
+            "deleted": ["eq"]
         }
         related_methods = {
             "requisition_technologies": ["GET"]
@@ -56,7 +77,7 @@ class RequisitionResource(Resource):
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     location_id = fields.IntegerField()
-    created = fields.DateTimeField()
+    created = fields.DateTimeField(nullable=True, readonly=True)
     status = EnumField(RequisitionStatusEnum, model_attname="status_id")
     position_type = EnumField(PositionTypeEnum, model_attname="position_type_id")
     title = fields.StringField()
@@ -66,6 +87,7 @@ class RequisitionResource(Resource):
     telecommute = fields.BooleanField()
     relocation = fields.BooleanField()
     employer_requisition_identifier = fields.StringField(nullable=True)
+    # TODO deleted = fields.BooleanField(hidden=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions")
     user = fields.EncodedForeignKey(UserResource, backref="requisitions")
@@ -73,4 +95,5 @@ class RequisitionResource(Resource):
     technologies = fields.ManyToMany(TechnologyResource, through=JobRequisitionTechnology, backref="requisitions+")
 
     objects = AlchemyResourceManager(db_session_factory)
+    # TODO objects = RequisitionManager(db_session_factory)
     authenticator = SessionAuthenticator()
