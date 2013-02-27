@@ -135,6 +135,7 @@ class Api(object):
     def process(self, request, context, callback, **kwargs):
         context = copy.copy(context)
         context.request = request
+        context.path = context.request.req.path
         context.method = request.method()
 
         for middleware in self.request_middlewares:

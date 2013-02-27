@@ -2,17 +2,12 @@ import re
 
 from rest.exceptions import AuthorizationError
 from rest.filter import Filter
+from rest.utils.resource import to_collection
 
 class ResourceAuthorizer(object):
     def __init__(self):
         self.resource_class = None
     
-    def _to_list(self, value):
-        if isinstance(value, (list, tuple)):
-            return value
-        else:
-            return [value]
-
     def contribute_to_class(self, resource_class, name):
         resource_class.desc.authorizer = self
         setattr(resource_class, name, self)
@@ -56,7 +51,7 @@ class ResourceAuthorizer(object):
         resource_class_name = resource_class.__name__
         
         if context.data:
-            for resource in self._to_list(context.data):
+            for resource in to_collection(context.data):
                 if not isinstance(resource, resource_class):
                     msg =  "invalid response, expected %s not %s" % \
                             (resource_class.__name__, resource.__class__.__name__)
@@ -185,9 +180,8 @@ class ResourceAuthorizer(object):
 
     def authorize_query_response(self, context, response, query):
         resource_class = context.resource_class
-
         if response.data:
-            for resource in self._to_list(response.data):
+            for resource in to_collection(response.data):
                 if not isinstance(resource, resource_class):
                     msg =  "invalid response, expected %s not %s" % \
                             (resource_class.__name__, resource.__class__.__name__)

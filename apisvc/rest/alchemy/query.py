@@ -1,13 +1,13 @@
 import inspect
 
-from sqlalchemy import desc
+from sqlalchemy import asc, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ManyToMany
 from rest.query import Query
-from rest.resource import Resource
+from rest.resource import Resource, ResourceCollection
 
 DB_OPERATIONS = {
     "eq": lambda c, v: c == v,
@@ -33,7 +33,7 @@ class AlchemyQuery(Query):
                 resource_class=resource_class,
                 transaction_factory=transaction_factory)
 
-    def _build_query(self, db_session):
+    def _build_query(self, db_session, is_count=False):
         query = db_session.query(self.resource_class.desc.model_class)
         try:
             #Set optional alchemy query options if provided.
@@ -43,9 +43,14 @@ class AlchemyQuery(Query):
         except AttributeError:
             pass
         query = self._apply_filters(query)
-        query = self._apply_order_bys(query)
-        query = self._apply_slices(query)
+
+        if not is_count:
+            query = self._apply_order_bys(query)
+            query = self._apply_slices(query)
         return query
+
+    def _build_count_query(self, db_session):
+        return self._build_query(db_session, is_count=True)
 
     def _apply_filters(self, query):
         for filter in self.filters:
@@ -66,10 +71,11 @@ class AlchemyQuery(Query):
             for order_by in self.order_bys:
                 field = order_by.target_field
                 query = self._apply_joins(order_by.related_fields, field, query)
-                order_bys.append(getattr(field.model_class, field.model_attname.rsplit(".")[-1]))
-            if self.order_arg == "DESC":
-                query = query.order_by(desc(*order_bys))
-            else:
+                o = getattr(field.model_class, field.model_attname.rsplit(".")[-1])
+                if order_by.direction == 'DESC':
+                    order_bys.append(desc(o))
+                else:
+                    order_bys.append(asc(o))
                 query = query.order_by(*order_bys)
         return query
     
@@ -88,11 +94,11 @@ class AlchemyQuery(Query):
         for with_relation in self.with_relations:
             current = resources
             for related_field in with_relation.related_fields:
-                if isinstance(current, (list, tuple)):
-                    new_current = []
+                if isinstance(current, ResourceCollection):
+                    new_current = ResourceCollection()
                     for obj in current:
                         result = getattr(obj, related_field.name)
-                        if isinstance(result, (list, tuple)):
+                        if isinstance(result, ResourceCollection):
                             new_current.extend(result)
                         else:
                             new_current.append(result)
@@ -186,13 +192,15 @@ class AlchemyQuery(Query):
 
     def all(self):
         with self.transaction_factory() as db_session:
-            results = []
+            results = self.resource_class.Collection()
 
             query = self._build_query(db_session)
             for model in query.all():
                 results.append(self.model_to_resource(model))
             self._apply_with_relations(results)
-
+            
+            results.total_count = self._build_count_query(db_session).count()
+            
             return results
 
     def create(self, **kwargs):
@@ -209,8 +217,8 @@ class AlchemyQuery(Query):
                 db_session.add(model)
                 db_session.flush()
                 return self.model_to_resource(model, resource)
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid create query: %s" % str(error))
 
     def update(self, **kwargs):
         resource = kwargs.pop("resource", None)
@@ -222,8 +230,8 @@ class AlchemyQuery(Query):
                 model = query.one()
                 self.resource_to_model(resource, model)
                 return self.model_to_resource(model, resource)
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid update query: %s" % str(error))
 
     def delete(self):
         with self.transaction_factory() as db_session:
@@ -248,8 +256,8 @@ class AlchemyQuery(Query):
                     self.model_to_resource(model, resource)
 
                 return resources
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid bulk create query: %s" % str(error))
 
     def bulk_update(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]
@@ -277,8 +285,8 @@ class AlchemyQuery(Query):
                     model = model_map[getattr(resource, model_pk_name)]
                     self.model_to_resource(model, resource)
                 return resources
-        except IntegrityError:
-            raise InvalidQuery("invalid data")
+        except IntegrityError as error:
+            raise InvalidQuery("invalid bulk update query: %s" % str(error))
 
     def bulk_delete(self, resources):
         primary_keys = [r.primary_key_value() for r in resources]

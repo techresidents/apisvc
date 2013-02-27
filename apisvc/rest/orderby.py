@@ -1,9 +1,15 @@
 from rest.exceptions import InvalidQuery
 
+DIRECTIONS = {
+    "ASC": "ASC",
+    "DESC": "DSC",
+}
+
 class OrderBy(object):
-    def __init__(self, related_fields, target_field):
+    def __init__(self, related_fields, target_field, direction):
         self.related_fields = related_fields
         self.target_field = target_field
+        self.direction = direction
     
     def name(self):
         relations = "__".join([f.name for f in self.related_fields])
@@ -23,6 +29,12 @@ class OrderBy(object):
         
             related_fields = []
             target_field = None
+
+            if parts[-1].upper() in DIRECTIONS:
+                direction = parts[-1].upper()
+                parts = parts[:-1]
+            else:
+                direction = DIRECTIONS["ASC"]
         
             for part in parts:
                 if part in current.desc.fields_by_name:
@@ -42,5 +54,5 @@ class OrderBy(object):
         
             primary_key = current.desc.primary_key
             target_field = target_field or current.desc.fields_by_name[primary_key]
-            results.append(OrderBy(related_fields, target_field))
+            results.append(OrderBy(related_fields, target_field, direction))
         return results

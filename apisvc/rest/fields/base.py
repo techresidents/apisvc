@@ -7,6 +7,8 @@ from trpycore.timezone import tz
 from rest.exceptions import ValidationError
 
 class Field(object):
+    STOP = "__STOP__"
+
     NO_DEFAULT = object()
 
     def __init__(self,
@@ -85,6 +87,12 @@ class Field(object):
             raise ValidationError(msg)
         return model_value
 
+    def read(self, formatter):
+        raise RuntimeError("read not supported")
+
+    def write(self, formatter, value):
+        raise RuntimeError("write not supported")
+
 class StringField(Field):
     def to_python(self, value):
         result = value
@@ -93,6 +101,19 @@ class StringField(Field):
         elif not isinstance(value, basestring):
             result = str(value)
         return result
+
+    def read(self, formatter):
+        return self.validate(formatter.read_string())
+
+    def write(self, formatter, value):
+        formatter.write_string(self.validate(value))
+
+class UriField(Field):
+    def read(self, formatter):
+        return self.validate(formatter.read_uri())
+
+    def write(self, formatter, value):
+        formatter.write_uri(self.validate(value))
 
 class EncodedField(StringField):
     def to_python(self, value):
@@ -124,6 +145,12 @@ class IntegerField(Field):
         except Exception:
             raise ValidationError("invalid integer '%s'" % str(value))
 
+    def read(self, formatter):
+        return self.validate(formatter.read_integer())
+
+    def write(self, formatter, value):
+        formatter.write_integer(self.validate(value))
+
 class FloatField(Field):
     def to_python(self, value):
         try:
@@ -134,6 +161,12 @@ class FloatField(Field):
             return result
         except Exception:
             raise ValidationError("invalid integer '%s'" % str(value))
+
+    def read(self, formatter):
+        return self.validate(formatter.read_float())
+
+    def write(self, formatter, value):
+        formatter.write_float(self.validate(value))
 
 class BooleanField(Field):
     def to_python(self, value):
@@ -150,6 +183,12 @@ class BooleanField(Field):
         else:
             raise ValidationError("invalid boolean '%s'" % str(value))
         return result
+
+    def read(self, formatter):
+        return self.validate(formatter.read_boolean())
+
+    def write(self, formatter, value):
+        formatter.write_boolean(self.validate(value))
 
 class DateField(Field):
     def to_python(self, value):
@@ -169,6 +208,12 @@ class DateField(Field):
         else :
             raise ValidationError("invalid date '%s'" % str(value))
         return result
+
+    def read(self, formatter):
+        return self.validate(formatter.read_date())
+
+    def write(self, formatter, value):
+        formatter.write_date(self.validate(value))
 
 class DateTimeField(Field):
     def to_python(self, value):
@@ -190,14 +235,52 @@ class DateTimeField(Field):
             raise ValidationError("invalid datetime '%s'" % str(value))
         return result
 
+    def read(self, formatter):
+        return self.validate(formatter.read_datetime())
+
+    def write(self, formatter, value):
+        formatter.write_datetime(self.validate(value))
+
 class TimestampField(FloatField):
-    pass
+    def read(self, formatter):
+        return self.validate(formatter.read_timestamp())
+
+    def write(self, formatter, value):
+        self.write_timestamp(self.validate(value))
 
 class ListField(Field):
-    pass
+    def read(self, formatter):
+        result = []
+        length = formatter.read_list_begin()
+        for i in range(length):
+            value = formatter.read_dynamic()
+            result.append(value)
+        formatter.read_list_end()
+        return result
+
+    def write(self, formatter, values):
+        formatter.write_list_begin(len(values))
+        for value in values:
+            formatter.write_dynamic(value)
+        formatter.write_list_end()
 
 class DictField(Field):
-    pass
+    def read(self, formatter):
+        result = {}
+        length = formatter.read_dict_begin()
+        for i in range(length):
+            key = formatter.read_dynamic()
+            value = formatter.read_dynamic()
+            result[key] = value
+        formatter.read_dict_end()
+        return result
+
+    def write(self, formatter, values):
+        formatter.write_dict_begin(len(values))
+        for key,value in values.items():
+            formatter.write_dynamic(key)
+            formatter.write_dynamic(value)
+        formatter.write_dict_end()
 
 class StructField(Field):
     def __init__(self, struct_class, model_struct_class, **kwargs):
@@ -256,3 +339,29 @@ class StructField(Field):
             field_value = field.validate_for_model(attribute)
             setattr(value, field.model_attname, field_value)
         return value
+
+    def read(self, formatter):
+        result = self.get_default()
+        formatter.read_struct_begin()
+        while True:
+            field_name = formatter.read_field_begin()
+            if field_name == Field.STOP:
+                break
+            field = self.struct_class.desc.fields_by_name[field_name]
+            field_value = field.read(formatter)
+            setattr(result, field.attname, field_value)
+            formatter.read_field_end()
+        formatter.write_struct_end()
+        return result
+
+    def write(self, formatter, value):
+        write_fields = lambda fields: [f for f in fields if not f.hidden]
+
+        formatter.write_struct_begin()
+        for field in write_fields(self.struct_class.desc.fields):
+            formatter.write_field_begin(field.attname, field)
+            field_value = getattr(value, field.attname)
+            field.write(formatter, field_value)
+            formatter.write_field_end()
+        formatter.write_field_stop()
+        formatter.write_struct_end()

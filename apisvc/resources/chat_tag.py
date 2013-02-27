@@ -36,8 +36,8 @@ class ChatTagResource(Resource):
     time = fields.DateTimeField()
     name = fields.StringField()
 
-    user = fields.EncodedForeignKey(UserResource, backref="speaking_markers+", model_name="user", model_attname="user_id")
-    chat_minute = fields.ForeignKey(ChatMinuteResource, backref="speaking_markers", model_name="chat_minute", model_attname="chat_minute_id")
+    user = fields.EncodedForeignKey(UserResource, backref="chat_tags+", model_name="user", model_attname="user_id")
+    chat_minute = fields.ForeignKey(ChatMinuteResource, backref="chat_tags", model_name="chat_minute", model_attname="chat_minute_id")
     chat_session = fields.EncodedForeignKey(ChatSessionResource, through="chat_minute", backref="chat_tags", model_name="chat_minute.chat_session", model_attname="chat_minute.chat_session_id")
 
     objects = AlchemyResourceManager(db_session_factory)

@@ -9,7 +9,7 @@ class RelatedField(Field):
         super(RelatedField, self).__init__(**kwargs)
         self.many = many
         self.self_referential = self_referential
-
+    
 class RelatedDescriptor(object):
     def __init__(self, field):
         self.field = field

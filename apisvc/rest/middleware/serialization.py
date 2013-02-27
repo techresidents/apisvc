@@ -29,16 +29,18 @@ class SerializationMiddleware(RestMiddleware):
                     serializer = context.resource_class.serializer
                     context.data = serializer.deserialize(
                             api=self.api,
-                            data=body,
+                            resource_uri=context.path,
+                            resource=result,
                             format=format,
-                            result=result)
+                            data=body)
                 except:                
                     result = context.resource_class()
                     context.data = serializer.deserialize(
                             api=self.api,
-                            data=body,
+                            resource=result,
+                            resource_uri=context.path,
                             format=format,
-                            result=result)
+                            data=body)
                     context.bulk = False
             except ValidationError as error:
                 logging.warning(str(error))
@@ -54,12 +56,12 @@ class SerializationMiddleware(RestMiddleware):
         if not response.successful:
             return response
         
-        if not response.data:
+        if response.data is None:
             response.data = ""
             response.headers["cache-control"] = "no-cache"
             response.headers["content-type"] = "text/plain"
 
-        elif response.data and not isinstance(response.data, basestring):
+        elif response.data is not None and not isinstance(response.data, basestring):
             content_type = context.request.header("content-type") \
                     or DEFAULT_CONTENT_TYPE
 
@@ -69,9 +71,11 @@ class SerializationMiddleware(RestMiddleware):
                     % FORMAT_CONTENT_TYPE[format]
 
             serializer = context.resource_class.serializer
+            resource_uri = context.path if context.method == "GET" else None
             response.data = serializer.serialize(
                     api=self.api,
                     resource=response.data,
+                    resource_uri=resource_uri,
                     format=format)
 
         return response

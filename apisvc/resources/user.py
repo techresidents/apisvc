@@ -1,4 +1,4 @@
-from trsvcscore.db.models import User, JobLocationPreference, JobTechnologyPreference
+from trsvcscore.db.models import User, JobLocationPref, JobTechnologyPref
 from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
@@ -7,6 +7,7 @@ from rest.sanitization import ResourceSanitizer
 from rest.resource import Resource
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
+from resources.tenant import TenantResource
 
 
 class UserSanitizer(ResourceSanitizer):
@@ -31,6 +32,7 @@ class UserResource(Resource):
         methods = ["GET"]
         bulk_methods = ["GET"]
         related_methods = {
+            "tenant": ["GET"],
             "chat_sessions": ["GET"],
             "skills": ["GET"],
             "location_prefs": ["GET"],
@@ -65,12 +67,14 @@ class UserResource(Resource):
         limit = 20
     
     id = fields.EncodedField(primary_key=True)
+    tenant_id = fields.EncodedField(primary_key=True)
     first_name = fields.StringField()
     last_name = fields.StringField()
     email = fields.StringField(readonly=True)
-
-    location_prefs = fields.ManyToMany(LocationResource, through=JobLocationPreference, backref="users+")
-    technology_prefs = fields.ManyToMany(TechnologyResource, through=JobTechnologyPreference, backref="users")
+    
+    tenant = fields.EncodedForeignKey(TenantResource, backref="users")
+    location_prefs = fields.ManyToMany(LocationResource, through=JobLocationPref, backref="users+")
+    technology_prefs = fields.ManyToMany(TechnologyResource, through=JobTechnologyPref, backref="users")
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()

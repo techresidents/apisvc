@@ -1,5 +1,8 @@
 import datetime
+import StringIO
 import unittest
+import json
+import pprint
 
 import pytz
 from sqlalchemy import create_engine
@@ -8,6 +11,7 @@ from sqlalchemy.orm import sessionmaker, subqueryload, joinedload
 import testbase
 import testbase
 from resources import UserResource, ChatSessionResource, ChatResource
+from rest.format.factory import FormatterFactory
 from api import Api
 
 class ResourceTest(unittest.TestCase):
@@ -64,13 +68,36 @@ class ResourceTest(unittest.TestCase):
         #resource = ChatSessionResource.objects.create(chat_id=1)
         #ChatSessionResource.objects.filter(id=26).update(id=26, token="blah2")
         
-        api = Api("api/v1")
-        resources = ChatSessionResource.objects.filter(id__in=[3,6]).all()
-        resources[0].chat_id = 2
-        resources[1].chat_id = 4
-        print ChatSessionResource.serializer.serialize(api, resources, "JSON")
-        #ChatSessionResource.objects.filter(users__id=11).bulk_update(resources=resources)
-        ChatSessionResource.objects.bulk_update(resources=resources)
+        #api = Api("api/v1")
+        #resources = ChatSessionResource.objects.filter(id__in=[3,6]).all()
+        #resources[0].chat_id = 2
+        #resources[1].chat_id = 4
+        #print ChatSessionResource.serializer.serialize(api, resources, "JSON")
+        ##ChatSessionResource.objects.filter(users__id=11).bulk_update(resources=resources)
+        #ChatSessionResource.objects.bulk_update(resources=resources)
+
+        api = Api("/api/v1")
+        resource = UserResource.objects.one(id=1)
+        print resource.tenant
+        print resource.location_prefs
+        formatter = FormatterFactory().create("JSON", StringIO.StringIO(), api)
+        resource.write(formatter)
+        result = formatter.buffer.getvalue()
+        pprint.pprint(json.loads(result))
+        
+        print "okay"
+        user = UserResource()
+        formatter = FormatterFactory().create("JSON", StringIO.StringIO(result), api)
+        user.read(formatter)
+        print user
+
+        print "okay"
+        formatter = FormatterFactory().create("JSON", StringIO.StringIO(), api)
+        user.write(formatter)
+        result = formatter.buffer.getvalue()
+        pprint.pprint(json.loads(result))
+
+
 
 if __name__ == '__main__':
     unittest.main()
