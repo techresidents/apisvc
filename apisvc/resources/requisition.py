@@ -87,7 +87,7 @@ class RequisitionResource(Resource):
     telecommute = fields.BooleanField()
     relocation = fields.BooleanField()
     employer_requisition_identifier = fields.StringField(nullable=True)
-    # TODO deleted = fields.BooleanField(hidden=True)
+    deleted = fields.BooleanField(hidden=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions")
     user = fields.EncodedForeignKey(UserResource, backref="requisitions")
