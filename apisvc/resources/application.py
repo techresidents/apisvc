@@ -31,7 +31,9 @@ class ApplicationResource(Resource):
         filtering = {
             "id": ["eq"],
             "tenant_id": ["eq"],
-            "user__id": ["eq"]
+            "user__id": ["eq"],
+            "status": ["eq", "in", "istartswith"],
+            "requisition__title": ["eq", "in", "istartswith"]
         }
         related_methods = {
             "application_scores": ["GET"],
@@ -48,6 +50,7 @@ class ApplicationResource(Resource):
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     requisition_id = fields.EncodedField()
+    created = fields.DateTimeField(nullable=True, readonly=True)
     type = EnumField(ApplicationTypeEnum, model_attname="type_id")
     status = EnumField(ApplicationStatusEnum, model_attname="status_id")
     created = fields.DateTimeField(nullable=True, readonly=True)
