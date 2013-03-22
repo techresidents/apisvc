@@ -53,6 +53,7 @@ class RequisitionResource(Resource):
             "id": ["eq"],
             "tenant__id": ["eq"],
             "status": ["eq"],
+            "title": ["eq", "istartswith"],
             "deleted": ["eq"]
         }
         related_methods = {

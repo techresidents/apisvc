@@ -29,7 +29,9 @@ class ApplicationResource(Resource):
         methods = ["GET", "POST", "PUT"]
         bulk_methods = ["GET"]
         filtering = {
-            "id": ["eq"]
+            "id": ["eq"],
+            "status": ["eq", "in", "istartswith"],
+            "requisition__title": ["eq", "in", "istartswith"]
         }    
         with_relations = ['requisition']
         ordering = ['created', 'status', 'requisition__status']
@@ -38,6 +40,7 @@ class ApplicationResource(Resource):
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     requisition_id = fields.EncodedField()
+    created = fields.DateTimeField(nullable=True, readonly=True)
     type = EnumField(ApplicationTypeEnum, model_attname="type_id")
     status = EnumField(ApplicationStatusEnum, model_attname="status_id")
 
