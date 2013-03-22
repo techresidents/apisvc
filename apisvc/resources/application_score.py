@@ -13,10 +13,12 @@ class ApplicationScoreResource(Resource):
         resource_name = "application_scores"
         model_class = JobApplicationScore
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST"]
         filtering = {
-            "id": ["eq"]
-        }    
+            "id": ["eq"],
+            "user_id": ["eq"],
+            "application__id":["eq"]
+        }
         with_relations = []
 
     id = fields.EncodedField(primary_key=True)

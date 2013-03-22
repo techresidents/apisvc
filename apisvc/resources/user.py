@@ -38,7 +38,8 @@ class UserResource(Resource):
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"]
+            "highlight_sessions": ["GET"],
+            "applications": ["GET"]
         }
         related_bulk_methods = {
             "chat_sessions": ["GET"],
@@ -46,7 +47,8 @@ class UserResource(Resource):
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"]
+            "highlight_sessions": ["GET"],
+            "applications": ["GET"]
         }
         filtering = {
             "id": ["eq"],

@@ -27,10 +27,20 @@ class ApplicationResource(Resource):
         resource_name = "applications"
         model_class = JobApplication
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST"]
         filtering = {
-            "id": ["eq"]
-        }    
+            "id": ["eq"],
+            "tenant_id": ["eq"],
+            "user__id": ["eq"]
+        }
+        related_methods = {
+            "application_scores": ["GET"],
+            "application_votes": ["GET"]
+        }
+        related_bulk_methods = {
+            "application_scores": ["GET"],
+            "application_votes": ["GET"]
+        }
         with_relations = ['requisition']
         ordering = ['created', 'status', 'requisition__status']
 
@@ -40,6 +50,7 @@ class ApplicationResource(Resource):
     requisition_id = fields.EncodedField()
     type = EnumField(ApplicationTypeEnum, model_attname="type_id")
     status = EnumField(ApplicationStatusEnum, model_attname="status_id")
+    created = fields.DateTimeField(nullable=True, readonly=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="applications+")
     user = fields.EncodedForeignKey(UserResource, backref="applications")
