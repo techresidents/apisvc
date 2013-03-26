@@ -27,11 +27,12 @@ class ApplicationResource(Resource):
         resource_name = "applications"
         model_class = JobApplication
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST"]
+        bulk_methods = ["GET", "POST", "PUT"]
         filtering = {
             "id": ["eq"],
             "tenant_id": ["eq"],
             "user__id": ["eq"],
+            "created": ["eq", "range"],
             "status": ["eq", "in", "istartswith"],
             "requisition__title": ["eq", "in", "istartswith"]
         }
