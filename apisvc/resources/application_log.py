@@ -13,7 +13,7 @@ class ApplicationLogResource(Resource):
         resource_name = "application_logs"
         model_class = JobApplicationLog
         methods = ["GET", "POST"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST"]
         filtering = {
             "id": ["eq"]
         }    

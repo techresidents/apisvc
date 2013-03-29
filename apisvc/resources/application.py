@@ -31,33 +31,39 @@ class ApplicationResource(Resource):
         filtering = {
             "id": ["eq"],
             "tenant_id": ["eq"],
+            "tenant__id": ["eq"],
             "user__id": ["eq"],
             "created": ["eq", "range"],
             "status": ["eq", "in", "istartswith"],
+            "requisition__status": ["eq", "in"],
             "requisition__title": ["eq", "in", "istartswith"]
         }
         related_methods = {
             "application_scores": ["GET"],
-            "application_votes": ["GET"]
+            "application_votes": ["GET"],
+            "interview_offers": ["GET"]
         }
         related_bulk_methods = {
             "application_scores": ["GET"],
-            "application_votes": ["GET"]
+            "application_votes": ["GET"],
+            "interview_offers": ["GET"]
         }
         with_relations = ['requisition']
-        ordering = ['created', 'status', 'requisition__status']
+        ordering = ['created', 'status', 'requisition__status', 'requisition__title']
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
+    creator_id = fields.EncodedField()
     requisition_id = fields.EncodedField()
     created = fields.DateTimeField(nullable=True, readonly=True)
     type = EnumField(ApplicationTypeEnum, model_attname="type_id")
     status = EnumField(ApplicationStatusEnum, model_attname="status_id")
     created = fields.DateTimeField(nullable=True, readonly=True)
 
-    tenant = fields.EncodedForeignKey(TenantResource, backref="applications+")
+    tenant = fields.EncodedForeignKey(TenantResource, backref="applications")
     user = fields.EncodedForeignKey(UserResource, backref="applications")
+    creator = fields.EncodedForeignKey(UserResource, backref="applications+")
     requisition = fields.EncodedForeignKey(RequisitionResource, backref="applications")
 
     objects = AlchemyResourceManager(db_session_factory)
