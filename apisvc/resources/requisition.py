@@ -52,6 +52,7 @@ class RequisitionResource(Resource):
         filtering = {
             "id": ["eq"],
             "tenant__id": ["eq"],
+            "tenant_id": ["eq"],
             "status": ["eq"],
             "title": ["eq", "istartswith"],
             "deleted": ["eq"]
