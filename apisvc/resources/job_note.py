@@ -25,6 +25,7 @@ class JobNoteResource(Resource):
     employee_id = fields.EncodedField()
     candidate_id = fields.EncodedField()
     note = fields.StringField()
+    modified = fields.DateTimeField(nullable=True, readonly=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="job_notes+")
     employee = fields.EncodedForeignKey(UserResource, backref="job_notes+")
