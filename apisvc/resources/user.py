@@ -52,6 +52,7 @@ class UserResource(Resource):
         }
         filtering = {
             "id": ["eq"],
+            "tenant_id": ["eq"],
             "technology_prefs__id": ["eq"],
             "chat_sessions__id": ["eq"],
             "position_prefs__id": ["eq"],
