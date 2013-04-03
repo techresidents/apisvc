@@ -39,11 +39,13 @@ class ApplicationResource(Resource):
             "requisition__title": ["eq", "in", "istartswith"]
         }
         related_methods = {
+            "application_logs": ["GET"],
             "application_scores": ["GET"],
             "application_votes": ["GET"],
             "interview_offers": ["GET"]
         }
         related_bulk_methods = {
+            "application_logs": ["GET"],
             "application_scores": ["GET"],
             "application_votes": ["GET"],
             "interview_offers": ["GET"]

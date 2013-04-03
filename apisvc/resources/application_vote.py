@@ -17,6 +17,7 @@ class ApplicationVoteResource(Resource):
         filtering = {
             "id": ["eq"],
             "user_id": ["eq"],
+            "application_id": ["eq"],
             "application__id":["eq"]
         }    
         with_relations = []

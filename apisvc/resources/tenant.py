@@ -11,10 +11,12 @@ class TenantResource(Resource):
         model_class = Tenant
         methods = ["GET"]
         related_methods = {
+            "users": ["GET"],
             "applications": ["GET"],
             "requisitions": ["GET"]
         }
         related_bulk_methods = {
+            "users": ["GET"],
             "applications": ["GET"],
             "requisitions": ["GET"]
         }

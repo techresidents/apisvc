@@ -51,19 +51,21 @@ class UserResource(Resource):
             "applications": ["GET"]
         }
         filtering = {
-            "id": ["eq"],
+            "id": ["eq", "in"],
+            "tenant__id": ["eq"],
             "technology_prefs__id": ["eq"],
             "chat_sessions__id": ["eq"],
             "position_prefs__id": ["eq"],
             "highlight_sessions__id": ["eq"]
         }
         with_relations = [
+            r"^tenant$",
             r"^chat_sessions(__chat)?(__topic)?$",
             r"^location_prefs$",
             r"^skills(__technology)?$",
             r"^technology_prefs$",
             r"^position_prefs$",
-            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$",
+            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$"
             ]
         ordering = []
         limit = 20

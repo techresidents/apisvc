@@ -15,15 +15,18 @@ class ApplicationLogResource(Resource):
         methods = ["GET", "POST"]
         bulk_methods = ["GET", "POST"]
         filtering = {
-            "id": ["eq"]
+            "id": ["eq"],
+            "application__id": ["eq"]
         }    
-        with_relations = []
+        with_relations = ["user"]
+        ordering = ["created"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     application_id = fields.EncodedField()
     note = fields.StringField(nullable=True)
+    created = fields.DateTimeField(nullable=True, readonly=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="application_logs+")
     user = fields.EncodedForeignKey(UserResource, backref="application_logs+")
