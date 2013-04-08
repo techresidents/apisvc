@@ -913,9 +913,10 @@ class FilterAuthorizer(ResourceAuthorizer):
         else:
             #resources came from with relations.
             #no easy way to authorize resources except
-            #by issuing another query joining with user.
+            #by issuing another query joining with filter.
             if resources:
                 primary_keys = [r.primary_key_value() for r in resources]
+                primary_keys = list(set(primary_keys))
                 primary_key_filter = "%s__in" % self.resource_class.desc.primary_key
 
                 kwargs = {}
@@ -924,6 +925,6 @@ class FilterAuthorizer(ResourceAuthorizer):
                 
                 #TODO replace with count() query once supported
                 authorized_resources = self.resource_class.desc.manager.all(**kwargs)
-                if len(authorized_resources) != len(resources):
+                if len(authorized_resources) != len(primary_keys):
                     raise AuthorizationError("non-%s resource in query response" %
                             self.filters[0])
