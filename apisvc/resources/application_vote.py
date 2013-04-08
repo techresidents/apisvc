@@ -3,7 +3,9 @@ from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
+from rest.authorization import MultiAuthorizer
 from rest.resource import Resource
+from auth import TenantAuthorizer, TenantUserAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.application import ApplicationResource
@@ -17,8 +19,9 @@ class ApplicationVoteResource(Resource):
         filtering = {
             "id": ["eq"],
             "user_id": ["eq"],
+            "tenant__id": ["eq"],
             "application_id": ["eq"],
-            "application__id":["eq"]
+            "application__id": ["eq"]
         }    
         with_relations = []
 
@@ -34,3 +37,9 @@ class ApplicationVoteResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = MultiAuthorizer({
+        "GET": TenantAuthorizer(['tenant', 'tenant_id']),
+        ("POST", "PUT", "DELETE"): TenantUserAuthorizer(
+            ['tenant', 'tenant_id'],
+            ['user', 'user_id'])
+    })

@@ -49,18 +49,15 @@ class QueryBuilderMiddleware(RestMiddleware):
         url_kwargs = self._parse_url_params(request)
         
         base_resource_name = context.resource_manager.resource_class.desc.resource_name
-        base_primary_key_name = context.resource_manager.resource_class.desc.primary_key
+        base_uri_key_name = context.resource_manager.uri_key()
 
         query_kwargs = dict(**url_kwargs)
         query_kwargs.update(kwargs)
         
-        #TODO may need to change in the future to not assume primary key
-        #is being used in the uri regex to uniquely identify a resource.
-        #For example, if nice uri's were used with usernames instead
-        #of user_id's.
-        base_primary_key = query_kwargs.pop("%s__%s" % (base_resource_name, base_primary_key_name))
-        instance_kwargs = {base_primary_key_name: base_primary_key}
+        base_uri_key = query_kwargs.pop("%s__%s" % (base_resource_name, base_uri_key_name))
+        instance_kwargs = {base_uri_key_name: base_uri_key}
         instance = context.resource_manager.resource_class(**instance_kwargs)
+        context.base_resource_instance = instance
 
         if request.method() == "GET":
             query = context.resource_manager.build_get_related_query(context.related_field, instance, **query_kwargs)

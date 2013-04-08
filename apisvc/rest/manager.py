@@ -24,14 +24,28 @@ class ResourceManager(object):
         return "/%s/%s" % (
                 self.resource_class.desc.resource_name,
                 resource.primary_key_value())
+    
+    def uri_base(self):
+        resource_name = self.resource_class.desc.resource_name
+        uri_base = r"/%s" % resource_name
+        return uri_base
+
+    def uri_key(self):
+        primary_key = self.resource_class.desc.primary_key
+        return primary_key
+    
+    def uri_primary(self):
+        uri_primary = r"%s/(?P<%s>\w+)" % (self.uri_base(), self.uri_key())
+        return uri_primary
+
+    def uri_related(self):
+        resource_name = self.resource_class.desc.resource_name
+        uri_primary = r"%s/(?P<%s__%s>\w+)" % (self.uri_base(), resource_name, self.uri_key())
+        return uri_primary
 
     def uris(self):
         result = []
 
-        resource_name = self.resource_class.desc.resource_name
-        primary_key = self.resource_class.desc.primary_key
-        base_uri = r"/%s" % resource_name
-        
         #Add subresource uris
         for subresource in self.resource_class.desc.subresources:
             for uri, context, method in subresource.desc.manager.uris():
@@ -39,26 +53,26 @@ class ResourceManager(object):
                     uri = uri[1:]
                 if uri.endswith("$"):
                     uri = uri[:-1]
-                uri = r"%s/%s$" % (base_uri, uri)
+                uri = r"%s/%s$" % (self.uri_base(), uri)
             result.append((uri, context, method))
         
-        uri = r"%s/(?P<%s>\w+)(\?.*)?$" % (base_uri, primary_key)
+        uri = r"%s(\?.*)?$" % (self.uri_primary())
         context = RequestContext(resource_class=self.resource_class, bulk=False)
         result.append((uri, context, self.dispatch))
 
         for field in self.resource_class.desc.related_fields:
             if field.hidden:
                 continue
-            uri = r"%s/(?P<%s__%s>\w+)/%s(\?.*)?$" % (base_uri, resource_name, primary_key, field.name)
+            uri = r"%s/%s(\?.*)?$" % (self.uri_related(), field.name)
             context = RequestContext(resource_class=field.relation, related_field=field, bulk=field.many)
             result.append((uri, context, self.dispatch))
             
-            related_primary_key = field.relation.desc.primary_key
-            uri = r"%s/(?P<%s__%s>\w+)/%s/(?P<%s>\w+)(\?.*)?$" % (base_uri, resource_name, primary_key, field.name, related_primary_key)
+            related_uri_key = field.relation.desc.manager.uri_key()
+            uri = r"%s/%s/(?P<%s>\w+)(\?.*)?$" % (self.uri_related(), field.name, related_uri_key)
             context = RequestContext(resource_class=field.relation, related_field=field, bulk=False)
             result.append((uri, context, self.dispatch))
         
-        uri = r"%s(\?.*)?$" % base_uri
+        uri = r"%s(\?.*)?$" % self.uri_base()
         context = RequestContext(resource_class=self.resource_class, bulk=True)
         result.append((uri, context, self.dispatch))
         return result
@@ -175,8 +189,23 @@ class ResourceManager(object):
                 arg = related_field.reverse.attname
                 value = getattr(resource_instance, resource_instance.desc.primary_key)
         else:
-            arg = "%s__%s" % (related_field.reverse.name, resource_instance.desc.primary_key)
-            value = getattr(resource_instance, resource_instance.desc.primary_key)
+            if isinstance(related_field, ForeignKey):
+                arg = related_field.container_class.desc.primary_key
+                primary_key_name = resource_instance.primary_key_name()
+                primary_key_value = resource_instance.primary_key_value()
+                value = getattr(resource_instance, related_field.attname, None)
+                if value is None:
+                    #Fetch resource and double check
+                    fetch_kwargs = {}
+                    fetch_kwargs[primary_key_name] = primary_key_value
+                    resource_instance = resource_instance.desc.manager.one(**fetch_kwargs)
+                    value = getattr(resource_instance, related_field.attname, None)
+            else:
+                arg = "%s__%s" % (related_field.reverse.name, resource_instance.desc.primary_key)
+                value = getattr(resource_instance, resource_instance.desc.primary_key)
+
+           #arg = "%s__%s" % (related_field.reverse.name, resource_instance.desc.primary_key)
+           #value = getattr(resource_instance, resource_instance.desc.primary_key)
         
         if arg in kwargs and kwargs[arg] != value:
             raise InvalidQuery("contradicting related filter")

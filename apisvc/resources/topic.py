@@ -8,7 +8,7 @@ from rest.alchemy.manager import AlchemyResourceManager
 from rest.fields.related import RelatedDescriptor
 from rest.resource import Resource
 from rest.alchemy.query import AlchemyQuery
-from rest.authorization import PerUserResourceAuthorizer
+from auth import UserAuthorizer
 from resources.user import UserResource
 
 class TopicTypeEnum(Enum):
@@ -116,4 +116,4 @@ class TopicResource(Resource):
     user = fields.EncodedForeignKey(UserResource, backref="topics+")
 
     objects = TopicManager(db_session_factory)
-    authorizer = PerUserResourceAuthorizer(UserResource, "user_id", ["GET"])
+    authorizer = UserAuthorizer(['user', 'user_id'], ["GET"])

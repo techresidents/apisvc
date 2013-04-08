@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.application import ApplicationResource
@@ -51,3 +52,4 @@ class InterviewOfferResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
@@ -99,3 +100,4 @@ class RequisitionResource(Resource):
     objects = AlchemyResourceManager(db_session_factory)
     # TODO objects = RequisitionManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

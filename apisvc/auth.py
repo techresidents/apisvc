@@ -1,10 +1,10 @@
 import logging
 
 from factory.session import session_store_pool
+from rest.authorization import MacroAuthorizer, FilterAuthorizer
 from rest.exceptions import AuthenticationError
 from rest.middleware.base import RestMiddleware
 from rest.response import Response
-
 
 class SessionAuthenticationMiddleware(RestMiddleware):
     def process_request(self, context, request, **kwargs):
@@ -15,9 +15,11 @@ class SessionAuthenticationMiddleware(RestMiddleware):
             if session:
                 context.session = session
                 context.user_id = session.user_id()
+                context.tenant_id = session.tenant_id()
             else:
                 context.session = None
                 context.user_id = None
+                context.tenant_id = None
         try:
             authenticator = context.resource_class.desc.authenticator
             authenticator.authenticate_request(context, request, **kwargs)
@@ -35,3 +37,26 @@ class SessionAuthenticationMiddleware(RestMiddleware):
 
     def process_exception(self, context, request, exception, **kwargs):
         return None
+
+class UserAuthorizer(FilterAuthorizer):
+    def __init__(self, user_filters, exclude_methods=None):
+        super(UserAuthorizer, self).__init__(
+                filters=user_filters,
+                context_attribute='user_id',
+                exclude_methods=exclude_methods)
+
+class TenantAuthorizer(FilterAuthorizer):
+    def __init__(self, tenant_filters, exclude_methods=None):
+        super(TenantAuthorizer, self).__init__(
+                filters=tenant_filters,
+                context_attribute='tenant_id',
+                exclude_methods=exclude_methods)
+
+class TenantUserAuthorizer(MacroAuthorizer):
+    def __init__(self, tenant_field_name, user_field_name):
+        self.tenant_authorizer = TenantAuthorizer(tenant_field_name)
+        self.user_authorizer = UserAuthorizer(user_field_name)
+        super(TenantUserAuthorizer, self).__init__([
+            self.tenant_authorizer,
+            self.user_authorizer
+        ])

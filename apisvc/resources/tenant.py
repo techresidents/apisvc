@@ -13,12 +13,14 @@ class TenantResource(Resource):
         related_methods = {
             "users": ["GET"],
             "applications": ["GET"],
-            "requisitions": ["GET"]
+            "requisitions": ["GET"],
+            "job_notes": ["GET"]
         }
         related_bulk_methods = {
             "users": ["GET"],
             "applications": ["GET"],
-            "requisitions": ["GET"]
+            "requisitions": ["GET"],
+            "job_notes": ["GET"]
         }
         filtering = {
             "id": ["eq"],

@@ -4,6 +4,7 @@ from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.requisition import RequisitionResource
 from resources.technology import TechnologyResource
 
@@ -32,3 +33,4 @@ class RequisitionTechnologyResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer('requisition__tenant')

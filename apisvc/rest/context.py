@@ -3,6 +3,7 @@ class RequestContext(object):
             api=None,
             session=None,
             user_id=None,
+            tenant_id=None,
             resource_manager=None,
             resource_class=None,
             related_field=None,
@@ -11,10 +12,12 @@ class RequestContext(object):
             data=None,
             bulk=False,
             path=None,
-            query=None):
+            query=None,
+            base_resource_instance=None):
         self.api = api
         self.session = session
         self.user_id = user_id
+        self.tenant_id = tenant_id
         self.resource_manager = resource_manager
         self.resource_class = resource_class
         self.related_field = related_field
@@ -24,6 +27,7 @@ class RequestContext(object):
         self.bulk = bulk 
         self.path = path
         self.query = query
+        self.base_resource_instance = base_resource_instance
     
     def is_direct_resource(self):
         return self.resource_class == self.resource_manager.resource_class

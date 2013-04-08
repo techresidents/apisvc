@@ -6,7 +6,7 @@ class Operation(object):
         self.name = name
         self.target_field = target_field
         self.operands = self.parse_operands(operands)
-    
+
     def parse_operands(self, operands):
         return self._to_list(self.target_field.validate(operands))
 
@@ -15,6 +15,16 @@ class Operation(object):
             return x
         else:
             return[x]
+    
+    def __eq__(self, other):
+        return other is not None and \
+               self.name == other.name and \
+               self.target_field is other.target_field and \
+               self.operands == other.operands
+
+    def __hash__(self):
+        return hash((self.name, self.target_field, self.operands))
+        
 
 class MultiOperandOperation(Operation):
     def __init__(self, name, target_field, operands, delimiter=","):
@@ -132,6 +142,14 @@ class Filter(object):
         else:
             result = operation
         return result
+
+    def __eq__(self, other):
+        return other is not None and \
+               self.related_fields == other.related_fields and \
+               self.operation == other.operation
+    
+    def __hash__(self):
+        return hash((self.related_fields, self.operation))
 
     @staticmethod
     def parse(resource_class, **kwargs):

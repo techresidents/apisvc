@@ -258,7 +258,7 @@ class ResourceBase(object):
     def uri(self):
         manager = self.desc.manager
         return manager.uri(self)
-        
+
     def save(self):
         manager = self.desc.manager
         if self.primary_key_value():
