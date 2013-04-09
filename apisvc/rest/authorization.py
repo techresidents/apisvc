@@ -259,10 +259,15 @@ class ResourceAuthorizer(object):
         return response
 
 
-class MacroResourceAuthorizer(ResourceAuthorizer):
+class MacroAuthorizer(ResourceAuthorizer):
     def __init__(self, authorizers):
-        super(MacroResourceAuthorizer, self).__init__()
+        super(MacroAuthorizer, self).__init__()
         self.authorizers = authorizers
+
+    def contribute_to_class(self, resource_class, name):
+        for authorizer in self.authorizers:
+            authorizer.contribute_to_class(resource_class, name)
+        super(MacroAuthorizer, self).contribute_to_class(resource_class, name)
 
     def authorize_request(self, context, request, **kwargs):
         for auth in self.authorizers:
@@ -422,31 +427,267 @@ class MacroResourceAuthorizer(ResourceAuthorizer):
         return response
 
 
-class PerUserResourceAuthorizer(ResourceAuthorizer):
-    def __init__(self, user_resource_class, user_filter, exclude_methods=None):
-        super(PerUserResourceAuthorizer, self).__init__()
-        self.user_resource_class = user_resource_class
-        self.user_filter = user_filter
-        self.exclude_methods = exclude_methods or []
-        self.resource_class = None
+class MultiAuthorizer(ResourceAuthorizer):
+    def __init__(self, authorizer_map):
+        super(MultiAuthorizer, self).__init__()
+        self.authorizer_map = self._normalize_authorizer_map(authorizer_map)
     
-    def _authorize_query(self, context, request, query):
-        if request.method() == "POST":
-            return query
+    def _normalize_authorizer_map(self, authorizer_map):
+        result = {}
+        for methods, authorizer in authorizer_map.items():
+            if isinstance(methods, basestring):
+                result[methods] = authorizer
+            else:
+                for method in methods:
+                    result[method] = authorizer
+        return result
 
-        kwargs = {}
-        kwargs[self.user_filter] = context.user_id
+    def _get_authorizer(self, context):
+        return self.authorizer_map.get(context.method, None)
 
-        user_filter = Filter.parse(context.resource_class, **kwargs)[0]
-        for filter in query.filters:
-            if filter.operation.target_field is user_filter.operation.target_field:
-                if filter.operation.name != user_filter.operation.name or\
-                        filter.operation.operands != user_filter.operation.operands:
-                            raise AuthorizationError("non-user resource - invalid user fiilter")
-                break
+    def contribute_to_class(self, resource_class, name):
+        for authorizer in self.authorizer_map.values():
+            authorizer.contribute_to_class(resource_class, name)
+        super(MultiAuthorizer, self).contribute_to_class(resource_class, name)
+
+    def authorize_request(self, context, request, **kwargs):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            auth.authorize_request(context, request, **kwargs)
+    
+    def authorize_response(self, context, response, **kwargs):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_response(context, response, **kwargs)
+        return response
+
+    def authorize_query_resources(self, context, resources, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            auth.authorize_query_resources(context, resources, query)
+
+    def authorize_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_query(context, request, query)
+        return query
+
+    def authorize_exact_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_exact_query(context, request, query)
+        return query
+
+    def authorize_all_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_all_query(context, request, query)
+        return query
+
+    def authorize_one_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_one_query(context, request, query)
+        return query
+
+    def authorize_create_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_create_query(context, request, query)
+        return query
+
+    def authorize_bulk_create_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_bulk_create_query(context, request, query)
+        return query
+
+    def authorize_update_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_update_query(context, request, query)
+        return query
+
+    def authorize_bulk_update_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_bulk_update_query(context, request, query)
+        return query
+
+    def authorize_delete_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_delete_query(context, request, query)
+        return query
+
+    def authorize_bulk_delete_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_bulk_delete_query(context, request, query)
+        return query
+
+    def authorize_get_related_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_get_related_query(context, request, query)
+        return query
+
+    def authorize_create_related_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_create_related_query(context, request, query)
+        return query
+
+    def authorize_update_related_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_update_related_query(context, request, query)
+        return query
+
+    def authorize_delete_related_query(self, context, request, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            query = auth.authorize_delete_related_query(context, request, query)
+        return query
+    
+    def authorize_query_response_resources(self, context, resources, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            auth.authorize_query_response_resources(context, resources, query)
+
+    def authorize_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_query_response(context, response, query)
+        return response
+
+    def authorize_exact_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_exact_query_response(context, response, query)
+        return response
+
+    def authorize_all_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_all_query_response(context, response, query)
+        return response
+
+    def authorize_one_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_one_query_response(context, response, query)
+        return response
+
+    def authorize_create_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_create_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_create_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_bulk_create_query_response(context, response, query)
+        return response
+
+    def authorize_update_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_update_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_update_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_bulk_update_query_response(context, response, query)
+        return response
+
+    def authorize_delete_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_delete_query_response(context, response, query)
+        return response
+
+    def authorize_bulk_delete_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_bulk_delete_query_response(context, response, query)
+        return response
+
+    def authorize_get_related_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_get_related_query_response(context, response, query)
+        return response
+
+    def authorize_create_related_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_create_related_query_response(context, response, query)
+        return response
+
+    def authorize_update_related_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_update_related_query_response(context, response, query)
+        return response
+
+    def authorize_delete_related_query_response(self, context, response, query):
+        auth = self._get_authorizer(context)
+        if auth is not None:
+            response = auth.authorize_delete_related_query_response(context, response, query)
+        return response
+
+
+class FilterAuthorizer(ResourceAuthorizer):
+    def __init__(self,
+            filters,
+            context_attribute,
+            exclude_methods=None):
+        super(FilterAuthorizer, self).__init__()
+        if isinstance(filters, basestring):
+            self.filters = [filters]
         else:
-            query = query.filter(**kwargs)
+            self.filters = filters
+        self.context_attribute = context_attribute
+        self.exclude_methods = exclude_methods or []
+
+    def _get_context_value(self, context):
+        return getattr(context, self.context_attribute, None)
+
+    def _authorize_query(self, context, request, query):
+        if context.method == "POST":
+            return query
         
+        kwargs = {}
+        for filter in self.filters:
+            kwargs[filter] = self._get_context_value(context)
+        filters = Filter.parse(context.resource_class, **kwargs)
+
+        for filter in query.filters:
+            if filter in filters:
+                break
+            elif filter.name() in [r.name() for r in filters]:
+                raise AuthorizationError("non-%s resource filter" %
+                        self.filters[0])
+        else:
+            kwargs = {}
+            kwargs[self.filters[0]] = self._get_context_value(context)
+            uri_key_filter = self.resource_class.desc.manager.uri_key() + '__eq'
+
+            #if the query contains the uri key filter
+            #add the required filter as a convenience
+            if uri_key_filter in [f.name() for f in query.filters]:
+                query = query.filter(**kwargs)
+            #Or if this resource is being access through a related resource
+            #also add filter
+            elif context.base_resource_instance:
+                query = query.filter(**kwargs)
+            else:
+                raise AuthorizationError("%s resource filter missing" %
+                        self.filters[0])
+
         return query
 
     def _authorize_related_query(self, context, request, query):
@@ -454,24 +695,22 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
             return query
 
         resource_class = context.resource_manager.resource_class
-        primary_key_name = resource_class.desc.primary_key
-        primary_key_field = resource_class.desc.primary_key_field
-        primary_key = None
-        for filter in query.filters:
-            if filter.operation.target_field is primary_key_field:
-                primary_key = filter.operation.operands[0]
-        kwargs = {}
-        kwargs[primary_key_name] = primary_key
-        kwargs[self.user_filter] = context.user_id
+        resource_key_name = context.resource_manager.uri_key()
+        resource_key = getattr(context.base_resource_instance, resource_key_name)
         
+        kwargs = {}
+        kwargs[resource_key_name] = resource_key
+        kwargs[self.filters[0]] = self._get_context_value(context)
+
         try:
             resource_class.desc.manager.one(**kwargs)
         except:
-            raise AuthorizationError("non-user resource")
+            raise AuthorizationError("non-%s resource in related query" %
+                    self.filters[0])
         return query
 
     def authorize_query(self, context, request, query):
-        query = super(PerUserResourceAuthorizer, self).authorize_query(
+        query = super(FilterAuthorizer, self).authorize_query(
                 context=context,
                 request=request,
                 query=query)
@@ -489,7 +728,7 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
         return query
 
     def authorize_query_resources(self, context, resources, query):
-        super(PerUserResourceAuthorizer, self).authorize_query_resources(
+        super(FilterAuthorizer, self).authorize_query_resources(
                 context=context,
                 resources=resources,
                 query=query)
@@ -497,18 +736,27 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
         if context.method in self.exclude_methods:
             return
         
-        for resource in resources:
-            for related_field in self.resource_class.desc.related_fields:
-                if related_field.relation is self.user_resource_class \
-                    and not related_field.many:
-                        user_id = getattr(resource, related_field.attname)
-                        user_id = related_field.validate_for_model(user_id)
-                        if user_id != context.user_id:
-                            raise AuthorizationError("invalid user id")
-
+        kwargs = {}
+        for filter in self.filters:
+            kwargs[filter] = self._get_context_value(context)
+        filters = Filter.parse(context.resource_class, **kwargs)
+    
+        field = None
+        for filter in filters:
+            if not filter.related_fields:
+                field = filter.operation.target_field
+                break
+        
+        if field:
+            for resource in resources:
+                value = getattr(resource, field.attname)
+                value = field.validate_for_model(value)
+                if value != self._get_context_value(context):
+                    raise AuthorizationError("non-%s resource in query" %
+                            self.filters[0])
 
     def authorize_query_response_resources(self, context, resources, query):
-        super(PerUserResourceAuthorizer, self).authorize_query_response_resources(
+        super(FilterAuthorizer, self).authorize_query_response_resources(
                 context=context,
                 resources=resources,
                 query=query)
@@ -525,16 +773,18 @@ class PerUserResourceAuthorizer(ResourceAuthorizer):
         else:
             #resources came from with relations.
             #no easy way to authorize resources except
-            #by issuing another query joining with user.
+            #by issuing another query joining with filter.
             if resources:
                 primary_keys = [r.primary_key_value() for r in resources]
+                primary_keys = list(set(primary_keys))
                 primary_key_filter = "%s__in" % self.resource_class.desc.primary_key
 
                 kwargs = {}
-                kwargs[self.user_filter] = context.user_id
+                kwargs[self.filters[0]] = self._get_context_value(context)
                 kwargs[primary_key_filter] = primary_keys
                 
                 #TODO replace with count() query once supported
                 authorized_resources = self.resource_class.desc.manager.all(**kwargs)
-                if len(authorized_resources) != len(resources):
-                    raise AuthorizationError("non-user resources")
+                if len(authorized_resources) != len(primary_keys):
+                    raise AuthorizationError("non-%s resource in query response" %
+                            self.filters[0])

@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.application import ApplicationResource
@@ -27,9 +28,10 @@ class InterviewOfferResource(Resource):
         resource_name = "interview_offers"
         model_class = JobInterviewOffer
         methods = ["GET", "PUT", "POST"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "PUT", "POST"]
         filtering = {
-            "id": ["eq"]
+            "id": ["eq"],
+            "application__id": ["eq"]
         }    
         with_relations = []
 
@@ -41,6 +43,7 @@ class InterviewOfferResource(Resource):
     type= EnumField(InterviewOfferTypeEnum, model_attname="type_id")
     status = EnumField(InterviewOfferStatusEnum, model_attname="status_id")
     expires = fields.DateTimeField()
+    created = fields.DateTimeField(nullable=True, readonly=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="interview_offers+")
     candidate = fields.EncodedForeignKey(UserResource, backref="interview_offers")
@@ -49,3 +52,4 @@ class InterviewOfferResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

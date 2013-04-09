@@ -16,8 +16,14 @@ class UserSanitizer(ResourceSanitizer):
 
     def sanitize_resources(self, context, resources):
         for resource in resources:
-            field = resource.desc.fields_by_name['id']
-            if context.user_id == field.to_model(resource.id):
+            user_id_field = resource.desc.fields_by_name['id']
+            tenant_id_field = resource.desc.fields_by_name['tenant_id']
+
+            user_id = user_id_field.to_model(resource.id)
+            tenant_id = tenant_id_field.to_model(resource.tenant_id)
+
+            if context.user_id == user_id or \
+               (context.tenant_id != 1 and context.tenant_id == tenant_id):
                 continue
             
             #remove personal info
@@ -38,7 +44,9 @@ class UserResource(Resource):
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"]
+            "highlight_sessions": ["GET"],
+            "applications": ["GET"],
+            "job_notes": ["GET"]
         }
         related_bulk_methods = {
             "chat_sessions": ["GET"],
@@ -46,22 +54,27 @@ class UserResource(Resource):
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"]
+            "highlight_sessions": ["GET"],
+            "applications": ["GET"],
+            "job_notes": ["GET"]
         }
         filtering = {
-            "id": ["eq"],
+            "id": ["eq", "in"],
+            "tenant_id": ["eq"],
+            "tenant__id": ["eq"],
             "technology_prefs__id": ["eq"],
             "chat_sessions__id": ["eq"],
             "position_prefs__id": ["eq"],
             "highlight_sessions__id": ["eq"]
         }
         with_relations = [
+            r"^tenant$",
             r"^chat_sessions(__chat)?(__topic)?$",
             r"^location_prefs$",
             r"^skills(__technology)?$",
             r"^technology_prefs$",
             r"^position_prefs$",
-            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$",
+            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$"
             ]
         ordering = []
         limit = 20

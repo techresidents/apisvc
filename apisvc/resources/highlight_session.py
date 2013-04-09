@@ -3,8 +3,8 @@ from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
-from rest.authorization import PerUserResourceAuthorizer
 from rest.resource import Resource
+from auth import UserAuthorizer
 from resources.user import UserResource
 from resources.chat_session import ChatSessionResource
 
@@ -47,4 +47,4 @@ class HighlightSessionResource(Resource):
 
     objects = HighlightSessionManager(db_session_factory)
     authenticator = SessionAuthenticator()
-    authorizer = PerUserResourceAuthorizer(UserResource, "user_id", ["GET"])
+    authorizer = UserAuthorizer(['user', 'user_id'], ["GET"])

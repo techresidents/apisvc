@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.requisition import RequisitionResource
@@ -27,23 +28,47 @@ class ApplicationResource(Resource):
         resource_name = "applications"
         model_class = JobApplication
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST", "PUT"]
         filtering = {
-            "id": ["eq"]
-        }    
+            "id": ["eq"],
+            "tenant_id": ["eq"],
+            "tenant__id": ["eq"],
+            "user__id": ["eq"],
+            "created": ["eq", "range"],
+            "status": ["eq", "in", "istartswith"],
+            "requisition__status": ["eq", "in"],
+            "requisition__title": ["eq", "in", "istartswith"]
+        }
+        related_methods = {
+            "application_logs": ["GET"],
+            "application_scores": ["GET"],
+            "application_votes": ["GET"],
+            "interview_offers": ["GET"]
+        }
+        related_bulk_methods = {
+            "application_logs": ["GET"],
+            "application_scores": ["GET"],
+            "application_votes": ["GET"],
+            "interview_offers": ["GET"]
+        }
         with_relations = ['requisition']
-        ordering = ['created', 'status', 'requisition__status']
+        ordering = ['created', 'status', 'requisition__status', 'requisition__title']
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
+    creator_id = fields.EncodedField()
     requisition_id = fields.EncodedField()
+    created = fields.DateTimeField(nullable=True, readonly=True)
     type = EnumField(ApplicationTypeEnum, model_attname="type_id")
     status = EnumField(ApplicationStatusEnum, model_attname="status_id")
+    created = fields.DateTimeField(nullable=True, readonly=True)
 
-    tenant = fields.EncodedForeignKey(TenantResource, backref="applications+")
+    tenant = fields.EncodedForeignKey(TenantResource, backref="applications")
     user = fields.EncodedForeignKey(UserResource, backref="applications")
+    creator = fields.EncodedForeignKey(UserResource, backref="applications+")
     requisition = fields.EncodedForeignKey(RequisitionResource, backref="applications")
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

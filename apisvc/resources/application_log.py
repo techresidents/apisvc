@@ -4,6 +4,7 @@ from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.application import ApplicationResource
@@ -13,17 +14,20 @@ class ApplicationLogResource(Resource):
         resource_name = "application_logs"
         model_class = JobApplicationLog
         methods = ["GET", "POST"]
-        bulk_methods = ["GET"]
+        bulk_methods = ["GET", "POST"]
         filtering = {
-            "id": ["eq"]
+            "id": ["eq"],
+            "application__id": ["eq"]
         }    
-        with_relations = []
+        with_relations = ["user"]
+        ordering = ["created"]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
     application_id = fields.EncodedField()
     note = fields.StringField(nullable=True)
+    created = fields.DateTimeField(nullable=True, readonly=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="application_logs+")
     user = fields.EncodedForeignKey(UserResource, backref="application_logs+")
@@ -31,3 +35,4 @@ class ApplicationLogResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

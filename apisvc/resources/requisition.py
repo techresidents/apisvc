@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import TenantAuthorizer
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
@@ -52,7 +53,9 @@ class RequisitionResource(Resource):
         filtering = {
             "id": ["eq"],
             "tenant__id": ["eq"],
+            "tenant_id": ["eq"],
             "status": ["eq"],
+            "title": ["eq", "istartswith"],
             "deleted": ["eq"]
         }
         related_methods = {
@@ -87,7 +90,7 @@ class RequisitionResource(Resource):
     telecommute = fields.BooleanField()
     relocation = fields.BooleanField()
     employer_requisition_identifier = fields.StringField(nullable=True)
-    # TODO deleted = fields.BooleanField(hidden=True)
+    deleted = fields.BooleanField(hidden=True)
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions")
     user = fields.EncodedForeignKey(UserResource, backref="requisitions")
@@ -97,3 +100,4 @@ class RequisitionResource(Resource):
     objects = AlchemyResourceManager(db_session_factory)
     # TODO objects = RequisitionManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])

@@ -11,10 +11,16 @@ class TenantResource(Resource):
         model_class = Tenant
         methods = ["GET"]
         related_methods = {
-            "requisitions": ["GET"]
+            "users": ["GET"],
+            "applications": ["GET"],
+            "requisitions": ["GET"],
+            "job_notes": ["GET"]
         }
         related_bulk_methods = {
-            "requisitions": ["GET"]
+            "users": ["GET"],
+            "applications": ["GET"],
+            "requisitions": ["GET"],
+            "job_notes": ["GET"]
         }
         filtering = {
             "id": ["eq"],
