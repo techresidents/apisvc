@@ -81,7 +81,7 @@ class ResourceManager(object):
         try:
             response_code = 200
 
-            if context.resource_class is self.resource_class and context.related_field is None:
+            if context.resource_class:
                 if request.method() == "GET":
                     if context.bulk:
                         result = context.query.all()
@@ -101,29 +101,6 @@ class ResourceManager(object):
                 elif request.method() == "DELETE":
                     if context.bulk:
                         result = context.query.bulk_delete(resources=context.data)
-                    else:
-                        result = context.query.delete()
-            
-            elif context.resource_class and context.related_field:
-                if request.method() == "GET":
-                    if context.bulk:
-                        result = context.query.all()
-                    else:
-                        result = context.query.one()
-                elif request.method() == "POST":
-                    if context.bulk:
-                        result = context.query.create_bulk(context.data)
-                    else:    
-                        result = context.query.create(context.data)
-                    response_code = 201
-                elif request.method() == "PUT":
-                    if context.bulk:
-                        result = context.query.bulk_update(context.data)
-                    else:
-                        result = context.query.update(context.data)
-                elif request.method() == "DELETE":
-                    if context.bulk:
-                        result = context.query.bulk_delete(context.data)
                     else:
                         result = context.query.delete()
             else:
