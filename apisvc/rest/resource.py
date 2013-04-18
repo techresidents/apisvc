@@ -21,6 +21,7 @@ class ResourceDescription(object):
         self.allowed_related_methods = {}
         self.allowed_related_bulk_methods = {}
         self.allowed_filters = {}
+        self.allowed_options = {}
         self.allowed_order_bys = []
         self.allowed_with_relations = []
         self.allowed_limit = None
@@ -97,6 +98,7 @@ class ResourceMeta(type):
         desc_kwargs["allowed_related_methods"] = getattr(meta, "related_methods", None)
         desc_kwargs["allowed_related_bulk_methods"] = getattr(meta, "related_bulk_methods", None)
         desc_kwargs["allowed_filters"] = getattr(meta, "filtering", None)
+        desc_kwargs["allowed_options"] = getattr(meta, "options", None)
         desc_kwargs["allowed_order_bys"] = getattr(meta, "ordering", None)
         desc_kwargs["allowed_with_relations"] = getattr(meta, "with_relations", None)
         desc_kwargs["allowed_limit"] = getattr(meta, "limit", 20)

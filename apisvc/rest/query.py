@@ -8,6 +8,7 @@ class Query(object):
     def __init__(self, resource_class, transaction_factory):
         self.resource_class = resource_class
         self.transaction_factory = transaction_factory
+        self.options = {}
         self.filters = []
         self.slices = None
         self.order_bys = []
@@ -24,6 +25,16 @@ class Query(object):
         if "with" in kwargs:
             with_relations = kwargs.pop("with").split(",")
             self.with_relation(*with_relations)
+        
+        option_kwargs = {}
+        allowed_options = self.resource_class.desc.allowed_options
+        for option, default in allowed_options.items():
+            if option in kwargs:
+                value = kwargs.pop(option)
+            else:
+                value = default
+            option_kwargs[option] = value
+        self.option(**option_kwargs)
 
         self.filter(**kwargs)
     
@@ -89,6 +100,11 @@ class Query(object):
             xsetattr(model, arg, value)
         
         return model
+
+    def option(self, **kwargs):
+        for key, value in kwargs.items():
+            self.options[key] = value
+        return self
 
     def filter(self, **kwargs):
         filters = Filter.parse(self.resource_class, **kwargs)

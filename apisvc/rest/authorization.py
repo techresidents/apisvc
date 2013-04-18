@@ -56,7 +56,7 @@ class ResourceAuthorizer(object):
                     msg =  "invalid response, expected %s not %s" % \
                             (resource_class.__name__, resource.__class__.__name__)
                     raise AuthorizationError(msg)
-
+        
         allowed_filters = resource_class.desc.allowed_filters
         for filter in query.filters:
             name, operation = filter.name().rsplit("__", 1)
