@@ -21,8 +21,8 @@ class Location(Struct):
 class UserSearchResource(Resource):
     class Meta:
         resource_name = "search"
-        index = "users"
-        doc = "user"
+        es_index = "users"
+        es_doc = "user"
         methods = ["GET"]
         bulk_methods = ["GET"]
         filtering = {

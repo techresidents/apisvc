@@ -18,8 +18,8 @@ class ElasticSearchManager(ResourceManager):
 
     
     def index_name(self):
-        return self.resource_class.Meta.index
+        return self.resource_class.Meta.es_index
 
     def doc_name(self):
-        return self.resource_class.Meta.doc
+        return self.resource_class.Meta.es_doc
 
