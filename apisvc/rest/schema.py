@@ -96,7 +96,7 @@ class SchemaResourceManager(ResourceManager):
     def uris(self):
         results = []
         resource_name = self.resource_class.desc.resource_name
-        uri = r"^%s$" % resource_name
+        uri = r"^/%s$" % resource_name
         context = RequestContext(
                 resource_class=self.resource_class,
                 bulk=False,

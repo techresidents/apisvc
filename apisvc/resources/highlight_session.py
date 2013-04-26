@@ -22,7 +22,7 @@ class HighlightSessionResource(Resource):
         resource_name = "highlight_sessions"
         model_class = ChatHighlightSession
         methods = ["GET", "POST", "PUT", "DELETE"]
-        bulk_methods = ["GET", "POST", "PUT", "DELETE"]
+        bulk_methods = ["GET"]
         related_methods = {
             "user": ["GET"],
             "chat_session": ["GET"]

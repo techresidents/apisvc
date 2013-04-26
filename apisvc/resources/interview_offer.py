@@ -28,7 +28,7 @@ class InterviewOfferResource(Resource):
         resource_name = "interview_offers"
         model_class = JobInterviewOffer
         methods = ["GET", "PUT", "POST"]
-        bulk_methods = ["GET", "PUT", "POST"]
+        bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
             "application__id": ["eq"]

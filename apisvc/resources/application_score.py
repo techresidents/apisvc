@@ -15,7 +15,7 @@ class ApplicationScoreResource(Resource):
         resource_name = "application_scores"
         model_class = JobApplicationScore
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST"]
+        bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
             "user_id": ["eq"],

@@ -39,9 +39,3 @@ class RequestContext(object):
             return True
         else:
             return False
-    
-    def is_nested_resource(self):
-        if not self.is_direct_resource() and not self.is_related_resource():
-            return True
-        else:
-            return False

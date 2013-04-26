@@ -1,4 +1,5 @@
 from rest.exceptions import InvalidQuery
+from rest.fields import ListField, StructField
 
 DIRECTIONS = {
     "ASC": "ASC",
@@ -6,16 +7,16 @@ DIRECTIONS = {
 }
 
 class OrderBy(object):
-    def __init__(self, related_fields, target_field, direction):
-        self.related_fields = related_fields
+    def __init__(self, path_fields, target_field, direction):
+        self.path_fields = path_fields
         self.target_field = target_field
         self.direction = direction
     
     def name(self):
-        relations = "__".join([f.name for f in self.related_fields])
+        path = "__".join([f.name for f in self.path_fields])
         target = self.target_field.attname
-        if relations:
-            result = "%s__%s" % (relations, target)
+        if path:
+            result = "%s__%s" % (path, target)
         else:
             result = target
         return result
@@ -27,7 +28,7 @@ class OrderBy(object):
             current = resource_class
             parts = arg.split("__")
         
-            related_fields = []
+            path_fields = []
             target_field = None
 
             if parts[-1].upper() in DIRECTIONS:
@@ -39,20 +40,28 @@ class OrderBy(object):
             for part in parts:
                 if part in current.desc.fields_by_name:
                     field = current.desc.fields_by_name[part]
+                    if isinstance(field, StructField):
+                        current = field
+                        path_fields.append(field)
+                    elif isinstance(field, ListField) and \
+                       isinstance(field.field, StructField):
+                        current = field.field.struct_class
+                        path_fields.append(field)
+                    else:
+                        #target field should be the last part
+                        if parts[-1] != part:
+                            raise InvalidQuery("invalid order_by '%s'" % arg)
+                        target_field = field
                     target_field = field
-        
-                    #target field should be the last part
-                    if parts[-1] != part:
-                        raise InvalidQuery("invalid order_by '%s'" % arg)
         
                 elif part in current.desc.related_fields_by_name:
                     field = current.desc.related_fields_by_name[part]
-                    related_fields.append(field)
+                    path_fields.append(field)
                     current = field.relation
                 else:
                     raise InvalidQuery("invalid order_by '%s'" % arg)
         
             primary_key = current.desc.primary_key
             target_field = target_field or current.desc.fields_by_name[primary_key]
-            results.append(OrderBy(related_fields, target_field, direction))
+            results.append(OrderBy(path_fields, target_field, direction))
         return results

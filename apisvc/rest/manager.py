@@ -53,27 +53,37 @@ class ResourceManager(object):
                     uri = uri[1:]
                 if uri.endswith("$"):
                     uri = uri[:-1]
-                uri = r"%s/%s$" % (self.uri_base(), uri)
-            result.append((uri, context, method))
+                uri = r"%s%s$" % (self.uri_base(), uri)
+                result.append((uri, context, method))
         
         uri = r"%s(\?.*)?$" % (self.uri_primary())
-        context = RequestContext(resource_class=self.resource_class, bulk=False)
+        context = RequestContext(resource_manager=self,
+                resource_class=self.resource_class,
+                bulk=False)
         result.append((uri, context, self.dispatch))
 
         for field in self.resource_class.desc.related_fields:
             if field.hidden:
                 continue
             uri = r"%s/%s(\?.*)?$" % (self.uri_related(), field.name)
-            context = RequestContext(resource_class=field.relation, related_field=field, bulk=field.many)
+            context = RequestContext(resource_manager=self,
+                    resource_class=field.relation,
+                    related_field=field,
+                    bulk=field.many)
             result.append((uri, context, self.dispatch))
             
             related_uri_key = field.relation.desc.manager.uri_key()
             uri = r"%s/%s/(?P<%s>\w+)(\?.*)?$" % (self.uri_related(), field.name, related_uri_key)
-            context = RequestContext(resource_class=field.relation, related_field=field, bulk=False)
+            context = RequestContext(resource_manager=self,
+                    resource_class=field.relation,
+                    related_field=field,
+                    bulk=False)
             result.append((uri, context, self.dispatch))
         
         uri = r"%s(\?.*)?$" % self.uri_base()
-        context = RequestContext(resource_class=self.resource_class, bulk=True)
+        context = RequestContext(resource_manager=self,
+                resource_class=self.resource_class,
+                bulk=True)
         result.append((uri, context, self.dispatch))
         return result
 

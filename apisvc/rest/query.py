@@ -1,14 +1,15 @@
+from rest.collection import ResourceCollection
 from rest.filter import Filter
+from rest.option import Option
 from rest.orderby import OrderBy
 from rest.utils.attribute import xgetattr, xsetattr
 from rest.withrel import WithRelation
 
 class Query(object):
-
-    def __init__(self, resource_class, transaction_factory):
+    def __init__(self, resource_class, transaction_factory=None):
         self.resource_class = resource_class
         self.transaction_factory = transaction_factory
-        self.options = {}
+        self.options = Option.default_options(resource_class)
         self.filters = []
         self.slices = None
         self.order_bys = []
@@ -27,13 +28,9 @@ class Query(object):
             self.with_relation(*with_relations)
         
         option_kwargs = {}
-        allowed_options = self.resource_class.desc.allowed_options
-        for option, default in allowed_options.items():
-            if option in kwargs:
-                value = kwargs.pop(option)
-            else:
-                value = default
-            option_kwargs[option] = value
+        for option in self.resource_class.desc.options:
+            if option.name in kwargs:
+                option_kwargs[option.name] = kwargs.pop(option.name)
         self.option(**option_kwargs)
 
         self.filter(**kwargs)
@@ -54,7 +51,7 @@ class Query(object):
             if field.attname in excludes:
                 continue 
 
-            value = xgetattr(model, field.model_attname)
+            value = xgetattr(model, field.model_attname, None)
             kwargs[field.attname] = field.validate(value)
         
         if resource:
@@ -102,8 +99,9 @@ class Query(object):
         return model
 
     def option(self, **kwargs):
-        for key, value in kwargs.items():
-            self.options[key] = value
+        options = Option.parse(self.resource_class, **kwargs)
+        for name, value in options.items():
+            self.options[name] = value
         return self
 
     def filter(self, **kwargs):
@@ -157,3 +155,19 @@ class Query(object):
 
     def bulk_delete(self, resources):
         pass
+
+    def _apply_with_relations(self, resources):
+        for with_relation in self.with_relations:
+            current = resources
+            for related_field in with_relation.related_fields:
+                if isinstance(current, ResourceCollection):
+                    new_current = ResourceCollection()
+                    for obj in current:
+                        result = getattr(obj, related_field.name)
+                        if isinstance(result, ResourceCollection):
+                            new_current.extend(result)
+                        else:
+                            new_current.append(result)
+                    current = new_current
+                else:
+                    current = getattr(current, related_field.name)

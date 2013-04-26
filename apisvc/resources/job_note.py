@@ -14,7 +14,7 @@ class JobNoteResource(Resource):
         resource_name = "job_notes"
         model_class = JobNote
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST", "PUT"]
+        bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
             "tenant_id": ["eq"],

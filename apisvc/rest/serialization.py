@@ -1,6 +1,19 @@
 import StringIO
 from rest.format.factory import FormatterFactory
 
+def serialize(api, obj, format, formatter_factory=FormatterFactory()):
+    buffer = StringIO.StringIO()
+    formatter = formatter_factory.create(format, buffer, api)
+    obj.write(formatter)
+    return buffer.getvalue()
+
+def deserialize(self, api, obj, format, data):
+    buffer = StringIO.StringIO(data)
+    formatter = self.formatter_factory.create(format, buffer, api)
+    obj.read(formatter)
+    return obj
+
+
 class ResourceSerializer(object):
     def __init__(self, formatter_factory=FormatterFactory()):
         self.formatter_factory = formatter_factory

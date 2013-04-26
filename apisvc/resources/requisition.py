@@ -49,7 +49,7 @@ class RequisitionResource(Resource):
         resource_name = "requisitions"
         model_class = JobRequisition
         methods = ["GET", "POST", "PUT", "DELETE"]
-        bulk_methods = ["GET", "POST", "PUT", "DELETE"]
+        bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
             "tenant__id": ["eq"],

@@ -15,7 +15,7 @@ class ApplicationVoteResource(Resource):
         resource_name = "application_votes"
         model_class = JobApplicationVote
         methods = ["GET", "POST", "PUT"]
-        bulk_methods = ["GET", "POST"]
+        bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
             "user_id": ["eq"],
