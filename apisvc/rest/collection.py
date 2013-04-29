@@ -48,7 +48,8 @@ class ResourceCollection(object):
         formatter.read_struct_end()
 
     def write(self, formatter, resource_uri=None):
-        resource_uri = resource_uri or "/%s" % self.resource_class.desc.resource_name
+        resource_uri = resource_uri or\
+                self.resource_class.desc.manager.uri_base()
 
         formatter.write_struct_begin()
         formatter.write_field_begin("meta", StructField)

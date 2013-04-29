@@ -21,13 +21,20 @@ class ResourceManager(object):
         setattr(resource_class, name, self)
     
     def uri(self, resource):
-        return "/%s/%s" % (
-                self.resource_class.desc.resource_name,
+        result = "%s/%s" % (
+                self.uri_base(),
                 resource.primary_key_value())
-    
+        return result
+
     def uri_base(self):
         resource_name = self.resource_class.desc.resource_name
-        uri_base = r"/%s" % resource_name
+        uri_base = "/%s" % resource_name
+
+        #if a sub-resource prepend parent uri
+        parent_resource_class = self.resource_class.desc.parent_resource_class
+        if parent_resource_class is not None:
+            parent_uri = parent_resource_class.desc.manager.uri_base()
+            uri_base = '%s%s' % (parent_uri, uri_base)
         return uri_base
 
     def uri_key(self):
@@ -49,11 +56,6 @@ class ResourceManager(object):
         #Add subresource uris
         for subresource in self.resource_class.desc.subresources:
             for uri, context, method in subresource.desc.manager.uris():
-                if uri.startswith("^"):
-                    uri = uri[1:]
-                if uri.endswith("$"):
-                    uri = uri[:-1]
-                uri = r"%s%s$" % (self.uri_base(), uri)
                 result.append((uri, context, method))
         
         uri = r"%s(\?.*)?$" % (self.uri_primary())
