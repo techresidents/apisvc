@@ -4,7 +4,6 @@ from tres_gevent.filter import BoolFilter, RangeFilter, TermFilter, TermsFilter
 from tres_gevent.facet import Facets
 
 from rest.es.fields import QueryField
-from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.query import Query
 
 ES_OPERATIONS = {
