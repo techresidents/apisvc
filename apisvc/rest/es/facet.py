@@ -4,7 +4,8 @@ import tres.facet as esfacet
 from rest.facet import Facet, FacetStruct, FacetItemStruct
 
 class ESFacet(Facet):
-    def __init__(self, field, es_field=None):
+    def __init__(self, title, field, es_field=None):
+        self.title = title
         self.field = field
         self.es_field = es_field or field
     
@@ -16,8 +17,8 @@ class ESFacet(Facet):
 
 
 class TermsFacet(ESFacet):
-    def __init__(self, field, es_field=None, size_option=None):
-        super(TermsFacet, self).__init__(field, es_field)
+    def __init__(self, title, field, es_field=None, size_option=None):
+        super(TermsFacet, self).__init__(title, field, es_field)
         self.size_option = size_option
     
     def build_es_facet(self, query):
@@ -28,7 +29,7 @@ class TermsFacet(ESFacet):
         return esfacet.TermsFacet(self.es_field, size)
 
     def build_facet_struct(self, query, search_result):
-        result = FacetStruct(name=self.name)
+        result = FacetStruct(name=self.name, title=self.title)
         es_facet = search_result.facets.get(self.name)
         filter_prefix = self.field + '__in'
         
@@ -53,8 +54,8 @@ class TermsFacet(ESFacet):
                 off_filter = self._filters_to_str(filter_prefix,
                         current_filters)
             
-            item = FacetItemStruct(name=name, count=count, on=on,
-                    on_filter=on_filter, off_filter=off_filter)
+            item = FacetItemStruct(name=name, count=count,
+                    on=on, on_filter=on_filter, off_filter=off_filter)
             result.items.append(item)
 
         return result
@@ -74,8 +75,8 @@ class RangeFacet(ESFacet):
             self.include_end = include_end
             self.name = name
 
-    def __init__(self, field, ranges=None, es_field=None):
-        super(RangeFacet, self).__init__(field, es_field)
+    def __init__(self, title, field, ranges=None, es_field=None):
+        super(RangeFacet, self).__init__(title, field, es_field)
         self.es_field = es_field or field
         self.ranges = ranges or []
 
@@ -97,7 +98,7 @@ class RangeFacet(ESFacet):
         return result
 
     def build_facet_struct(self, query, search_result):
-        result = FacetStruct(name=self.name)
+        result = FacetStruct(name=self.name, title=self.title)
         es_facet = search_result.facets.get(self.name)
         filter_prefix = self.field + '__ranges'
 
@@ -134,8 +135,8 @@ class RangeFacet(ESFacet):
                 off_filter = self._filters_to_str(filter_prefix,
                         current_filters)
 
-            item = FacetItemStruct(name=name, count=count, on=on,
-                    on_filter=on_filter, off_filter=off_filter)
+            item = FacetItemStruct(name=name, count=count,
+                    on=on, on_filter=on_filter, off_filter=off_filter)
             result.items.append(item)
         return result
 
@@ -145,8 +146,8 @@ class RangeFacet(ESFacet):
 
 
 class DateRangeFacet(RangeFacet):
-    def __init__(self, field, ranges=None, es_field=None):
-        super(DateRangeFacet, self).__init__(field, ranges, es_field)
+    def __init__(self, title, field, ranges=None, es_field=None):
+        super(DateRangeFacet, self).__init__(title, field, ranges, es_field)
 
     def build_es_facet(self, query):
         result = esfacet.RangeFacet(self.es_field)

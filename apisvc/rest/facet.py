@@ -16,4 +16,5 @@ class FacetItemStruct(Struct):
 
 class FacetStruct(Struct):
     name = fields.StringField()
+    title = fields.StringField()
     items = fields.ListField(fields.StructField(FacetItemStruct))

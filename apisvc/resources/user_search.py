@@ -61,18 +61,22 @@ class UserSearchResource(Resource):
     user = fields.EncodedForeignKey(UserResource, backref="searches+")
     
     #facets
-    f_skills = TermsFacet(field="skills__name",
+    f_skills = TermsFacet(title="Skills",
+            field="skills__name",
             es_field="skills.name.raw",
             size_option="f_skills_size")
-    f_location_prefs = TermsFacet(field="location_prefs__city",
+    f_location_prefs = TermsFacet(title="Location Preferences",
+            field="location_prefs__city",
             es_field="location_prefs.city.raw",
             size_option="f_location_prefs_size")
-    f_position_prefs = TermsFacet(field="position_prefs__type",
+    f_position_prefs = TermsFacet(title="Position Preferences",
+            field="position_prefs__type",
             es_field="position_prefs.type.raw",
             size_option="f_position_prefs_size")
-    f_yrs_experience = RangeFacet(field="yrs_experience")\
+    f_yrs_experience = RangeFacet(title="Years Experience",
+            field="yrs_experience")\
             .add(0,2).add(3,5).add(6, 100, name="6+")
-    f_joined = DateRangeFacet(field="joined")\
+    f_joined = DateRangeFacet(title="Joined", field="joined")\
             .add("now-7d", "now", name="Last 7 days")\
             .add("now-30d", "now", name="Last 30 days")
     
