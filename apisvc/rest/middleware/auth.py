@@ -59,7 +59,7 @@ class AuthorizationMiddleware(RestMiddleware):
         except Exception as error:
             logging.exception(error)
             response = Response(data="unauthorized", code=403)
-
+        
         return response
 
     def process_response(self, context, response, **kwargs):

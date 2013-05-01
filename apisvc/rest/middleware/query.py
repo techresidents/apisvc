@@ -56,7 +56,9 @@ class QueryBuilderMiddleware(RestMiddleware):
         query_kwargs = dict(**url_kwargs)
         query_kwargs.update(kwargs)
         
-        base_uri_key = query_kwargs.pop("%s__%s" % (base_resource_name, base_uri_key_name))
+        base_uri_key = query_kwargs.pop("%s__%s" % (
+                base_resource_name, base_uri_key_name))
+
         instance_kwargs = {base_uri_key_name: base_uri_key}
         instance = context.resource_manager.resource_class(**instance_kwargs)
         context.base_resource_instance = instance
@@ -90,7 +92,7 @@ class QueryBuilderMiddleware(RestMiddleware):
         except Exception as error:
             logging.exception(error)
             response = Response(data="invalid request", code=400)
-
+        
         return response
 
     def process_response(self, context, response, **kwargs):
