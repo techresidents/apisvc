@@ -35,7 +35,11 @@ class TechnologyResource(Resource):
     id = fields.IntegerField(primary_key=True)
     name = fields.StringField()
     description = fields.StringField()
-    type = EnumField(TechnologyTypeEnum, model_attname="type_id")
+    type = EnumField(TechnologyTypeEnum, attname='id', model_attname="type_id")
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+
+#Add subresources with cirucular dependency
+from resources.technology_search import TechnologySearchResource
+TechnologyResource.add_to_class('search', TechnologySearchResource())
