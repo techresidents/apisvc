@@ -29,33 +29,39 @@ class TermsFacet(ESFacet):
         return esfacet.TermsFacet(self.es_field, size)
 
     def build_facet_struct(self, query, search_result):
-        result = FacetStruct(name=self.name, title=self.title)
-        es_facet = search_result.facets.get(self.name)
         filter_prefix = self.field + '__in'
+        es_facet = search_result.facets.get(self.name)
         
         current_filters = []
         for f in query.filters:
             if f.name() == filter_prefix:
                 current_filters = f.operation.operands
                 break
+        current_filter = self._filters_to_str(filter_prefix, current_filters)
+
+        result = FacetStruct(
+                name=self.name,
+                title=self.title,
+                filter=current_filter)
 
         for term in es_facet.terms:
             name = term.get('term')
             count = term.get('count')
             if name in current_filters:
-                on = True
-                on_filter = self._filters_to_str(filter_prefix, current_filters)
-                off_filter = self._filters_to_str(filter_prefix,
+                enabled = True
+                enable_filter = self._filters_to_str(filter_prefix,
+                        current_filters)
+                disable_filter = self._filters_to_str(filter_prefix,
                         filter(lambda f: f != name, current_filters))
             else:
-                on = False
-                on_filter = self._filters_to_str(filter_prefix,
+                enabled = False
+                enable_filter = self._filters_to_str(filter_prefix,
                         current_filters + [name])
-                off_filter = self._filters_to_str(filter_prefix,
+                disable_filter = self._filters_to_str(filter_prefix,
                         current_filters)
             
-            item = FacetItemStruct(name=name, count=count,
-                    on=on, on_filter=on_filter, off_filter=off_filter)
+            item = FacetItemStruct(name=name, count=count, enabled=enabled,
+                    enable_filter=enable_filter, disable_filter=disable_filter)
             result.items.append(item)
 
         return result
@@ -98,15 +104,20 @@ class RangeFacet(ESFacet):
         return result
 
     def build_facet_struct(self, query, search_result):
-        result = FacetStruct(name=self.name, title=self.title)
-        es_facet = search_result.facets.get(self.name)
         filter_prefix = self.field + '__ranges'
+        es_facet = search_result.facets.get(self.name)
 
         current_filters = []
         for f in query.filters:
             if f.name() == filter_prefix:
                 current_filters = f.operation.parsed_operands
                 break
+        current_filter = self._filters_to_str(filter_prefix, current_filters)
+
+        result = FacetStruct(
+                name=self.name,
+                title=self.title,
+                filter=current_filter)
 
         for search_range, result_range in zip(self.ranges, es_facet.ranges):
             start = search_range.start
@@ -124,19 +135,20 @@ class RangeFacet(ESFacet):
             
             r_filter = (str(start), str(end))
             if r_filter in current_filters:
-                on = True
-                on_filter = self._filters_to_str(filter_prefix, current_filters)
-                off_filter = self._filters_to_str(filter_prefix,
+                enabled = True
+                enable_filter = self._filters_to_str(filter_prefix,
+                        current_filters)
+                disable_filter = self._filters_to_str(filter_prefix,
                         filter(lambda f: f != r_filter, current_filters))
             else:
-                on = False
-                on_filter = self._filters_to_str(filter_prefix,
+                enabled = False
+                enable_filter = self._filters_to_str(filter_prefix,
                         current_filters + [r_filter])
-                off_filter = self._filters_to_str(filter_prefix,
+                disable_filter = self._filters_to_str(filter_prefix,
                         current_filters)
 
-            item = FacetItemStruct(name=name, count=count,
-                    on=on, on_filter=on_filter, off_filter=off_filter)
+            item = FacetItemStruct(name=name, count=count, enabled=enabled,
+                    enable_filter=enable_filter, disable_filter=disable_filter)
             result.items.append(item)
         return result
 

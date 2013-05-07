@@ -12,15 +12,30 @@ from resources.user import UserResource
 
 class Skill(Struct):
     id = fields.IntegerField()
+    technology_id = fields.IntegerField()
+    expertise_type_id = fields.IntegerField()
     name = fields.StringField(filter_ext=".raw")
+    expertise_type = fields.StringField()
+    yrs_experience = fields.IntegerField()
 
-class Location(Struct):
+class LocationPref(Struct):
     id = fields.IntegerField()
-    city = fields.StringField(filter_ext=".raw")
+    location_id = fields.IntegerField()
+    name = fields.StringField(filter_ext=".raw")
+    city = fields.StringField()
+    state = fields.StringField()
 
-class Position(Struct):
+class PositionPref(Struct):
     id = fields.IntegerField()
+    type_id = fields.IntegerField()
     type = fields.StringField(filter_ext=".raw")
+    salary_start = fields.IntegerField(nullable=True)
+    salary_end = fields.IntegerField(nullable=True)
+
+class TechnologyPref(Struct):
+    id = fields.IntegerField()
+    technology_id = fields.IntegerField()
+    name = fields.StringField(filter_ext=".raw")
 
 class UserSearchResource(Resource):
     class Meta:
@@ -33,8 +48,9 @@ class UserSearchResource(Resource):
             "yrs_experience": ["eq", "in", "range", "ranges"],
             "joined": ["eq", "in", "range", "ranges"],
             "skills__name": ["eq", "in"],
-            "location_prefs__city": ["eq", "in"],
-            "position_prefs__type": ["eq", "in"]
+            "location_prefs__name": ["eq", "in"],
+            "position_prefs__type": ["eq", "in"],
+            "technology_prefs__name": ["eq", "in"]
         }
         with_relations = [
             "^user(__skills)?$"
@@ -46,6 +62,7 @@ class UserSearchResource(Resource):
     f_skills_size = Option(default=10, field=fields.IntegerField())
     f_location_prefs_size = Option(default=10, field=fields.IntegerField())
     f_position_prefs_size = Option(default=10, field=fields.IntegerField())
+    f_technology_prefs_size = Option(default=10, field=fields.IntegerField())
 
     #fields
     id = fields.EncodedField(primary_key=True)
@@ -53,9 +70,11 @@ class UserSearchResource(Resource):
     yrs_experience = fields.IntegerField()
     joined = fields.DateTimeField()
     skills = fields.ListField(field=fields.StructField(Skill, dict))
-    location_prefs = fields.ListField(field=fields.StructField(Location, dict))
-    position_prefs = fields.ListField(field=fields.StructField(Position, dict))
-    q = MultiMatchQueryField(es_fields=['skills.name'], nullable=True)
+    location_prefs = fields.ListField(field=fields.StructField(LocationPref, dict))
+    position_prefs = fields.ListField(field=fields.StructField(PositionPref, dict))
+    technology_prefs = fields.ListField(field=fields.StructField(TechnologyPref, dict))
+    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.name'],
+            nullable=True)
     
     #related fields
     user = fields.EncodedForeignKey(UserResource, backref="searches+")
@@ -66,13 +85,17 @@ class UserSearchResource(Resource):
             es_field="skills.name.raw",
             size_option="f_skills_size")
     f_location_prefs = TermsFacet(title="Location Preferences",
-            field="location_prefs__city",
-            es_field="location_prefs.city.raw",
+            field="location_prefs__name",
+            es_field="location_prefs.name.raw",
             size_option="f_location_prefs_size")
     f_position_prefs = TermsFacet(title="Position Preferences",
             field="position_prefs__type",
             es_field="position_prefs.type.raw",
             size_option="f_position_prefs_size")
+    f_technology_prefs = TermsFacet(title="Technology Preferences",
+            field="technology_prefs__name",
+            es_field="technology_prefs.name.raw",
+            size_option="f_technology_prefs_size")
     f_yrs_experience = RangeFacet(title="Years Experience",
             field="yrs_experience")\
             .add(0,2).add(3,5).add(6, 100, name="6+")

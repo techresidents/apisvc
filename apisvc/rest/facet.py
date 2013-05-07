@@ -9,12 +9,13 @@ class Facet(object):
 
 class FacetItemStruct(Struct):
     name = fields.StringField()
-    on_filter = fields.StringField()
-    off_filter = fields.StringField()
+    enable_filter = fields.StringField()
+    disable_filter = fields.StringField()
     count = fields.IntegerField()
-    on = fields.BooleanField()
+    enabled = fields.BooleanField()
 
 class FacetStruct(Struct):
     name = fields.StringField()
     title = fields.StringField()
+    filter = fields.StringField()
     items = fields.ListField(fields.StructField(FacetItemStruct))
