@@ -20,7 +20,9 @@ class JobNoteResource(Resource):
             "tenant_id": ["eq"],
             "tenant__id": ["eq"],
             "employee_id": ["eq"],
-            "employee__id": ["eq"]
+            "employee__id": ["eq"],
+            "candidate_id": ["eq"],
+            "candidate__id": ["eq"]
         }    
         related_methods = {
         }
