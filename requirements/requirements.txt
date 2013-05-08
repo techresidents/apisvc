@@ -18,4 +18,4 @@ git+ssh://dev.techresidents.com/tr/repos/techresidents/lib/python/tres_gevent.gi
 git+ssh://dev.techresidents.com/tr/repos/techresidents/services/core/python/trsvcscore.git@0.22.0#egg=trsvcscore
 
 http://nexus.dev.techresidents.com/content/groups/public/com/techresidents/services/core/idl/idl-core-python/0.7.0/idl-core-python-0.7.0-bin.tar.gz#egg=tridlcore
-http://nexus.dev.techresidents.com/content/groups/public/com/techresidents/services/apisvc/apisvc-idl-python/0.10-SNAPSHOT/apisvc-idl-python-0.10-SNAPSHOT-bin.tar.gz#egg=trapisvc
+http://nexus.dev.techresidents.com/content/groups/public/com/techresidents/services/apisvc/apisvc-idl-python/0.10.0/apisvc-idl-python-0.10.0-bin.tar.gz#egg=trapisvc
