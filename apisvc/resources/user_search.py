@@ -101,7 +101,9 @@ class UserSearchResource(Resource):
             .add(0,2).add(3,5).add(6, 100, name="6+")
     f_joined = DateRangeFacet(title="Joined", field="joined")\
             .add("now-7d", "now", name="Last 7 days")\
-            .add("now-30d", "now", name="Last 30 days")
+            .add("now-30d", "now", name="Last 30 days")\
+            .add("now-3M", "now", name="Last 3 months")\
+            .add("now-12M", "now", name="Last year")
     
     #objects
     objects = ElasticSearchManager(es_client_pool)
