@@ -29,4 +29,4 @@ class SanitizationMiddleware(RestMiddleware):
         return response
 
     def process_exception(self, context, request, exception, **kwargs):
-        return None
+        return exception

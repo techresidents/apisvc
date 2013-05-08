@@ -4,9 +4,12 @@ def xgetattr(obj, name, default=NO_DEFAULT):
     try:
         current = obj
         for attribute in name.split("."):
-            current = getattr(current, attribute)
+            if isinstance(current, dict):
+                current = current[attribute]
+            else:
+                current = getattr(current, attribute)
         result = current
-    except AttributeError:        
+    except (AttributeError, KeyError):
         if default is NO_DEFAULT:
             raise
         else:
@@ -19,7 +22,14 @@ def xsetattr(obj, name, value):
 
     current = obj
     for attribute in names:
-        current = getattr(current, attribute)
+       if isinstance(current, dict):
+           current = current[attribute]
+       else:
+           current = getattr(current, attribute)
     
-    return setattr(current, attribute_name, value)
-
+    if isinstance(current, dict):
+        current[attribute_name] = value
+    else:        
+        setattr(current, attribute_name, value)
+    
+    return value

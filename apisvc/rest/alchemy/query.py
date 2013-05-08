@@ -1,13 +1,13 @@
 import inspect
 
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from rest.exceptions import InvalidQuery, ResourceNotFound
 from rest.fields import ManyToMany
 from rest.query import Query
-from rest.resource import Resource, ResourceCollection
+from rest.resource import Resource
 
 DB_OPERATIONS = {
     "eq": lambda c, v: c == v,
@@ -24,6 +24,7 @@ DB_OPERATIONS = {
     "endswith": lambda c, v: c.endswith(v),
     "iendswith": lambda c, v: c.ilike('%' + v.replace('%', '%%')),
     "range": lambda c, *v: c.between(*v),
+    "ranges": lambda c, *v: or_(*[c.between(s,e) for s,e in v]),
     "isnull": lambda c, v: c == None if v else c != None,
 }
 
@@ -54,13 +55,11 @@ class AlchemyQuery(Query):
 
     def _apply_filters(self, query):
         for filter in self.filters:
-            query = self._apply_joins(filter.related_fields, filter.operation.target_field, query)
+            query = self._apply_joins(filter.path_fields, filter.operation.target_field, query)
             model = filter.operation.target_field.model_class
             model_field = getattr(model, filter.operation.target_field.model_attname.rsplit(".", 1)[-1])
-            operands = []
-            for operand in filter.operation.operands:
-                operand = filter.operation.target_field.validate_for_model(operand)
-                operands.append(operand)
+            operands = filter.operation.map_operands(
+                    filter.operation.target_field.validate_for_model)
             db_op = DB_OPERATIONS[filter.operation.name](model_field, *operands)
             query = query.filter(db_op)
         return query
@@ -70,7 +69,7 @@ class AlchemyQuery(Query):
             order_bys = []
             for order_by in self.order_bys:
                 field = order_by.target_field
-                query = self._apply_joins(order_by.related_fields, field, query)
+                query = self._apply_joins(order_by.path_fields, field, query)
                 o = getattr(field.model_class, field.model_attname.rsplit(".")[-1])
                 if order_by.direction == 'DESC':
                     order_bys.append(desc(o))
@@ -89,22 +88,6 @@ class AlchemyQuery(Query):
             self.slices = (0, limit)
         query = query.slice(*self.slices)
         return query
-
-    def _apply_with_relations(self, resources):
-        for with_relation in self.with_relations:
-            current = resources
-            for related_field in with_relation.related_fields:
-                if isinstance(current, ResourceCollection):
-                    new_current = ResourceCollection()
-                    for obj in current:
-                        result = getattr(obj, related_field.name)
-                        if isinstance(result, ResourceCollection):
-                            new_current.extend(result)
-                        else:
-                            new_current.append(result)
-                    current = new_current
-                else:
-                    current = getattr(current, related_field.name)
 
     def _apply_joins(self, related_fields, target_field, query):
         current = self.resource_class

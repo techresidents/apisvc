@@ -22,7 +22,8 @@ class Field(object):
             readonly=False,
             hidden=False,
             through=None,
-            to_model=None):
+            to_model=None,
+            **kwargs):
         self.name = name
         self.model_class = model_class
         self.model_name = model_name or name
@@ -33,7 +34,8 @@ class Field(object):
         self.hidden = hidden
         self.through = through
         self.to_model_method = to_model
-        
+        self.options = kwargs
+
         #Resource or Struct class
         self.container_class = None
 
@@ -201,9 +203,8 @@ class DateField(Field):
         elif isinstance(value, datetime.datetime):
             result = datetime.date()
         elif isinstance(value, basestring):
-            try:
-                result = datetime.datetime.strptime(value, '%Y-%m-%d').date()
-            except:
+            result = tz.isodate_to_utc(value)
+            if result is None:
                 raise ValidationError("invalid date '%s'" % str(value))
         else :
             raise ValidationError("invalid date '%s'" % str(value))
@@ -226,11 +227,15 @@ class DateTimeField(Field):
         elif isinstance(value, datetime.date):
             dt = datetime.datetime(value.year, value.month, value.day)
             result = dt.replace(tzinfo=pytz.utc)
-        elif isinstance(value, (int, float, basestring)):
-            try:
-                result = tz.timestamp_to_utc(float(value))
-            except:
-                raise ValidationError("invalid datetime '%s'" % str(value))
+        elif isinstance(value, (int, float)):
+            result = tz.timestamp_to_utc(value)
+        elif isinstance(value, basestring):
+            result = tz.iso_to_utc(value) or tz.now_to_utc(value)
+            if result is None:
+                try:
+                    result = tz.timestamp_to_utc(float(value))
+                except:
+                    raise ValidationError("invalid datetime '%s'" % str(value))
         else :
             raise ValidationError("invalid datetime '%s'" % str(value))
         return result
@@ -249,46 +254,81 @@ class TimestampField(FloatField):
         self.write_timestamp(self.validate(value))
 
 class ListField(Field):
+    def __init__(self, field=None, **kwargs):
+        self.field = field
+        if "default" not in kwargs:
+            kwargs["default"] = lambda: []
+        super(ListField, self).__init__(**kwargs)
+
     def read(self, formatter):
         result = []
         length = formatter.read_list_begin()
         for i in range(length):
-            value = formatter.read_dynamic()
+            if self.field:
+                value = self.field.read(formatter)
+            else:
+                value = formatter.read_dynamic()
             result.append(value)
         formatter.read_list_end()
         return result
 
     def write(self, formatter, values):
+        values = values or []
         formatter.write_list_begin(len(values))
         for value in values:
-            formatter.write_dynamic(value)
+            if self.field:
+                self.field.write(formatter, value)
+            else:
+                formatter.write_dynamic(value)
         formatter.write_list_end()
 
 class DictField(Field):
+    def __init__(self, key_field=None, value_field=None, **kwargs):
+        self.key_field = key_field
+        self.value_field = value_field
+        if "default" not in kwargs:
+            kwargs["default"] = lambda: {}
+        super(DictField, self).__init__(**kwargs)
+
     def read(self, formatter):
         result = {}
         length = formatter.read_dict_begin()
         for i in range(length):
-            key = formatter.read_dynamic()
-            value = formatter.read_dynamic()
+            if self.key_field:
+                key = self.key_field.read(formatter)
+            else:
+                key = formatter.read_dynamic()
+            
+            if self.value_field:
+                value = self.value_field.read(formatter)
+            else:
+                value = formatter.read_dynamic()
             result[key] = value
         formatter.read_dict_end()
         return result
 
     def write(self, formatter, values):
+        values = values or {}
         formatter.write_dict_begin(len(values))
-        for key,value in values.items():
-            formatter.write_dynamic(key)
-            formatter.write_dynamic(value)
+        for key, value in values.items():
+            if self.key_field:
+                self.key_field.write(formatter, key)
+            else:
+                formatter.write_dynamic(key)
+            
+            if self.value_field:
+                self.value_field.write(formatter, value)
+            else:
+                formatter.write_dynamic(value)
         formatter.write_dict_end()
 
 class StructField(Field):
-    def __init__(self, struct_class, model_struct_class, **kwargs):
+    def __init__(self, struct_class, model_struct_class=None, **kwargs):
         if "default" not in kwargs:
             kwargs["default"] = lambda: struct_class()
         super(StructField, self).__init__(**kwargs)
         self.struct_class = struct_class
-        self.model_struct_class = model_struct_class
+        self.model_struct_class = model_struct_class or dict
     
     def to_python(self, value):
         result = None
@@ -356,6 +396,7 @@ class StructField(Field):
 
     def write(self, formatter, value):
         write_fields = lambda fields: [f for f in fields if not f.hidden]
+        value = self.validate(value)
 
         formatter.write_struct_begin()
         for field in write_fields(self.struct_class.desc.fields):

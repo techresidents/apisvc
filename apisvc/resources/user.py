@@ -9,7 +9,6 @@ from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
 
-
 class UserSanitizer(ResourceSanitizer):
     def __init__(self):
         super(UserSanitizer, self).__init__()
@@ -79,6 +78,8 @@ class UserResource(Resource):
         ordering = []
         limit = 20
     
+
+    #fields
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField(primary_key=True)
     first_name = fields.StringField()
@@ -88,7 +89,12 @@ class UserResource(Resource):
     tenant = fields.EncodedForeignKey(TenantResource, backref="users")
     location_prefs = fields.ManyToMany(LocationResource, through=JobLocationPref, backref="users+")
     technology_prefs = fields.ManyToMany(TechnologyResource, through=JobTechnologyPref, backref="users")
-
+    
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
     sanitizer = UserSanitizer()
+
+
+#Add subresources with cirucular dependency
+from resources.user_search import UserSearchResource
+UserResource.add_to_class('search', UserSearchResource())

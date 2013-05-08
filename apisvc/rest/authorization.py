@@ -56,7 +56,7 @@ class ResourceAuthorizer(object):
                     msg =  "invalid response, expected %s not %s" % \
                             (resource_class.__name__, resource.__class__.__name__)
                     raise AuthorizationError(msg)
-
+        
         allowed_filters = resource_class.desc.allowed_filters
         for filter in query.filters:
             name, operation = filter.name().rsplit("__", 1)
@@ -657,6 +657,7 @@ class FilterAuthorizer(ResourceAuthorizer):
         return getattr(context, self.context_attribute, None)
 
     def _authorize_query(self, context, request, query):
+        #TODO document that post auth is done in other method
         if context.method == "POST":
             return query
         
@@ -691,6 +692,7 @@ class FilterAuthorizer(ResourceAuthorizer):
         return query
 
     def _authorize_related_query(self, context, request, query):
+        #TODO consider removing
         if request.method() == "POST":
             return query
 
@@ -740,10 +742,12 @@ class FilterAuthorizer(ResourceAuthorizer):
         for filter in self.filters:
             kwargs[filter] = self._get_context_value(context)
         filters = Filter.parse(context.resource_class, **kwargs)
-    
+        
+        #TODO change this to work with filters which are on direct fields
+        #through a StructField or ListField(StructField) when needed.
         field = None
         for filter in filters:
-            if not filter.related_fields:
+            if not filter.path_fields:
                 field = filter.operation.target_field
                 break
         

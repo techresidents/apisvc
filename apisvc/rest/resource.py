@@ -1,5 +1,6 @@
-from rest.fields import Field, BooleanField, IntegerField, \
-        ListField, StringField, StructField, UriField, \
+from rest.collection import ResourceCollection, ResourceCollectionMetaStruct
+from rest.fields import Field, BooleanField,\
+        StringField, StructField, UriField, \
         RelatedField, ForeignKey
 from rest.struct import Struct
 
@@ -16,6 +17,10 @@ class ResourceDescription(object):
         self.fields_by_name = {}
         self.related_fields = []
         self.related_fields_by_name = {}
+        self.facets = []
+        self.facets_by_name = {}
+        self.options = []
+        self.options_by_name = {}
         self.allowed_methods = []
         self.allowed_bulk_methods = []
         self.allowed_related_methods = {}
@@ -58,6 +63,13 @@ class ResourceDescription(object):
             self.fields.append(field)
             self.fields_by_name[field.attname] = field
 
+    def add_facet(self, facet):
+        self.facets.append(facet)
+        self.facets_by_name[facet.name] = facet
+
+    def add_option(self, option):
+        self.options.append(option)
+        self.options_by_name[option.name] = option
 
 class ResourceMeta(type):
     def __new__(cls, name, bases, attributes):
@@ -156,69 +168,71 @@ class ResourceMeta(type):
             setattr(cls, name, value)
 
 
-class ResourceCollection(object):
-    @classmethod
-    def contribute_to_class(cls, resource_class, name):
-        cls.resource_class = resource_class
-        resource_class.desc.resource_collection_class = cls
-        setattr(resource_class, name, cls)
-
-    def __init__(self, resources=None):
-        self.total_count = 0
-        self.collection = list(resources) if resources else []
-    
-    def __iter__(self):
-        return iter(self.collection)
-
-    def __len__(self):
-        return len(self.collection)
-
-    def append(self, resource):
-        self.collection.append(resource)
-    
-    def extend(self, resources):
-        self.collection.extend(resources)
-    
-    def read(self, formatter, resource_uri=None):
-        formatter.read_struct_begin()
-        while True:
-            field_name = formatter.read_field_begin()
-            if field_name == Field.STOP:
-                break
-            elif field_name == "meta":
-                ResourceMetaStruct().read(formatter)
-            elif field_name == "results":
-                length = formatter.read_list_begin()
-                for i in range(length):
-                    resource = self.resource_class()
-                    resource.read(formatter)
-                    self.append(resource)
-                formatter.read_list_end()
-            else:
-                raise RuntimeError("read invalid field: %s" % field_name)
-            formatter.read_field_end()
-        formatter.read_struct_end()
-
-    def write(self, formatter, resource_uri=None):
-        resource_uri = resource_uri or "/%s" % self.resource_class.desc.resource_name
-
-        formatter.write_struct_begin()
-        formatter.write_field_begin("meta", StructField)
-        ResourceMetaStruct(
-            resource_name=self.resource_class.desc.resource_name,
-            resource_uri=resource_uri,
-            loaded=True,
-            many=True,
-            total_count=self.total_count
-        ).write(formatter)
-        formatter.write_field_end()
-        formatter.write_field_begin("results", ListField)
-        formatter.write_list_begin(len(self))
-        for resource in self:
-            resource.write(formatter)
-        formatter.write_list_end()
-        formatter.write_field_end()
-        formatter.write_struct_end()
+#class ResourceCollection(object):
+#    @classmethod
+#    def contribute_to_class(cls, resource_class, name):
+#        cls.resource_class = resource_class
+#        resource_class.desc.resource_collection_class = cls
+#        setattr(resource_class, name, cls)
+#
+#    def __init__(self, resources=None):
+#        self.total_count = 0
+#        self.facets = []
+#        self.collection = list(resources) if resources else []
+#    
+#    def __iter__(self):
+#        return iter(self.collection)
+#
+#    def __len__(self):
+#        return len(self.collection)
+#
+#    def append(self, resource):
+#        self.collection.append(resource)
+#    
+#    def extend(self, resources):
+#        self.collection.extend(resources)
+#    
+#    def read(self, formatter, resource_uri=None):
+#        formatter.read_struct_begin()
+#        while True:
+#            field_name = formatter.read_field_begin()
+#            if field_name == Field.STOP:
+#                break
+#            elif field_name == "meta":
+#                ResourceMetaStruct().read(formatter)
+#            elif field_name == "results":
+#                length = formatter.read_list_begin()
+#                for i in range(length):
+#                    resource = self.resource_class()
+#                    resource.read(formatter)
+#                    self.append(resource)
+#                formatter.read_list_end()
+#            else:
+#                raise RuntimeError("read invalid field: %s" % field_name)
+#            formatter.read_field_end()
+#        formatter.read_struct_end()
+#
+#    def write(self, formatter, resource_uri=None):
+#        resource_uri = resource_uri or "/%s" % self.resource_class.desc.resource_name
+#
+#        formatter.write_struct_begin()
+#        formatter.write_field_begin("meta", StructField)
+#        ResourceMetaStruct(
+#            resource_name=self.resource_class.desc.resource_name,
+#            resource_uri=resource_uri,
+#            loaded=True,
+#            many=True,
+#            total_count=self.total_count,
+#            facets=self.facets
+#        ).write(formatter)
+#        formatter.write_field_end()
+#        formatter.write_field_begin("results", ListField)
+#        formatter.write_list_begin(len(self))
+#        for resource in self:
+#            resource.write(formatter)
+#        formatter.write_list_end()
+#        formatter.write_field_end()
+#        formatter.write_struct_end()
 
 
 class ResourceBase(object):
@@ -310,8 +324,7 @@ class ResourceBase(object):
                 resource_name=self.desc.resource_name,
                 resource_uri=resource_uri,
                 loaded=True,
-                many=False,
-                total_count=1
+                many=False
                 ).write(formatter)
         formatter.write_field_end()
         
@@ -346,13 +359,20 @@ class ResourceBase(object):
                 formatter.write_field_begin(field.name, field)
                 formatter.write_struct_begin()
                 formatter.write_field_begin("meta", StructField)
-                ResourceMetaStruct(
-                        resource_name=field.relation.desc.resource_name,
-                        resource_uri=link,
-                        loaded=False,
-                        many=field.many,
-                        total_count=None if field.many else 1
-                        ).write(formatter)
+                if field.many:
+                    ResourceCollectionMetaStruct(
+                            resource_name=field.relation.desc.resource_name,
+                            resource_uri=link,
+                            loaded=False,
+                            many=True
+                            ).write(formatter)
+                else:
+                    ResourceMetaStruct(
+                            resource_name=field.relation.desc.resource_name,
+                            resource_uri=link,
+                            loaded=False,
+                            many=False
+                            ).write(formatter)
                 formatter.write_field_end()
                 formatter.write_struct_end()
                 formatter.write_field_end()
@@ -388,4 +408,3 @@ class ResourceMetaStruct(Struct):
     resource_uri = UriField(nullable=True)
     loaded = BooleanField()
     many = BooleanField()
-    total_count = IntegerField(nullable=True)

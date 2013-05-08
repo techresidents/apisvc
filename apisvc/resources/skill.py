@@ -29,7 +29,7 @@ class SkillResource(Resource):
         filtering = {
             "id": ["eq"],
             "expertise": ["eq", "in"],
-            "yrs_experience": ["eq", "lt", "lte", "gt", "gte"],
+            "yrs_experience": ["eq", "lt", "lte", "gt", "gte", "ranges"],
             "user__id": ["eq"],
             "technology__id": ["eq"]
         }    

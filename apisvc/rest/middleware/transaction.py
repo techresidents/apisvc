@@ -16,4 +16,4 @@ class TransactionMiddleware(RestMiddleware):
 
     def process_exception(self, context, request, exception, **kwargs):
         TransactionManager().rollback()
-        return None
+        return exception

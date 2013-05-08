@@ -9,4 +9,4 @@ class RestMiddleware(object):
         return response
 
     def process_exception(self, context, request, exception, **kwargs):
-        return None
+        return exception

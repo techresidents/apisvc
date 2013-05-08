@@ -1,8 +1,12 @@
 import logging
 
+from rest.collection import ResourceCollection
+from rest.error import Error
 from rest.exceptions import ValidationError
 from rest.middleware.base import RestMiddleware
 from rest.response import Response
+from rest.resource import ResourceBase
+from rest.serialization import serialize
 
 
 DEFAULT_FORMAT = "JSON"
@@ -53,23 +57,18 @@ class SerializationMiddleware(RestMiddleware):
         return response
         
     def process_response(self, context, response, **kwargs):
-        if not response.successful:
-            return response
-        
         if response.data is None:
             response.data = ""
             response.headers["cache-control"] = "no-cache"
             response.headers["content-type"] = "text/plain"
-
-        elif response.data is not None and not isinstance(response.data, basestring):
+        elif isinstance(response.data, (ResourceBase, ResourceCollection)):
             content_type = context.request.header("content-type") \
                     or DEFAULT_CONTENT_TYPE
-
             format = CONTENT_TYPE_FORMAT.get(content_type, DEFAULT_FORMAT)
             response.headers["cache-control"] = "no-cache"
             response.headers["content-type"] = "%s; charset=UTF-8" \
                     % FORMAT_CONTENT_TYPE[format]
-
+            
             serializer = context.resource_class.serializer
             resource_uri = context.path if context.method == "GET" else None
             response.data = serializer.serialize(
@@ -77,8 +76,16 @@ class SerializationMiddleware(RestMiddleware):
                     resource=response.data,
                     resource_uri=resource_uri,
                     format=format)
-
+        elif isinstance(response.data, Error):
+            content_type = context.request.header("content-type") \
+                    or DEFAULT_CONTENT_TYPE
+            format = CONTENT_TYPE_FORMAT.get(content_type, DEFAULT_FORMAT)
+            response.headers["cache-control"] = "no-cache"
+            response.headers["content-type"] = "%s; charset=UTF-8" \
+                    % FORMAT_CONTENT_TYPE[format]
+            response.data = serialize(self.api, response.data, format)
+        
         return response
 
     def process_exception(self, context, request, exception, **kwargs):
-        return None
+        return exception

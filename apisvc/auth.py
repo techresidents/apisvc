@@ -29,14 +29,14 @@ class SessionAuthenticationMiddleware(RestMiddleware):
         except Exception as error:
             logging.exception(error)
             response = Response(data="unauthorized", code=401)
-
+        
         return response
 
     def process_response(self, context, response, **kwargs):
         return response
 
     def process_exception(self, context, request, exception, **kwargs):
-        return None
+        return exception
 
 class UserAuthorizer(FilterAuthorizer):
     def __init__(self, user_filters, exclude_methods=None):

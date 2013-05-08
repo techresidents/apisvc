@@ -21,13 +21,20 @@ class ResourceManager(object):
         setattr(resource_class, name, self)
     
     def uri(self, resource):
-        return "/%s/%s" % (
-                self.resource_class.desc.resource_name,
+        result = "%s/%s" % (
+                self.uri_base(),
                 resource.primary_key_value())
-    
+        return result
+
     def uri_base(self):
         resource_name = self.resource_class.desc.resource_name
-        uri_base = r"/%s" % resource_name
+        uri_base = "/%s" % resource_name
+
+        #if a sub-resource prepend parent uri
+        parent_resource_class = self.resource_class.desc.parent_resource_class
+        if parent_resource_class is not None:
+            parent_uri = parent_resource_class.desc.manager.uri_base()
+            uri_base = '%s%s' % (parent_uri, uri_base)
         return uri_base
 
     def uri_key(self):
@@ -49,31 +56,36 @@ class ResourceManager(object):
         #Add subresource uris
         for subresource in self.resource_class.desc.subresources:
             for uri, context, method in subresource.desc.manager.uris():
-                if uri.startswith("^"):
-                    uri = uri[1:]
-                if uri.endswith("$"):
-                    uri = uri[:-1]
-                uri = r"%s/%s$" % (self.uri_base(), uri)
-            result.append((uri, context, method))
+                result.append((uri, context, method))
         
         uri = r"%s(\?.*)?$" % (self.uri_primary())
-        context = RequestContext(resource_class=self.resource_class, bulk=False)
+        context = RequestContext(resource_manager=self,
+                resource_class=self.resource_class,
+                bulk=False)
         result.append((uri, context, self.dispatch))
 
         for field in self.resource_class.desc.related_fields:
             if field.hidden:
                 continue
             uri = r"%s/%s(\?.*)?$" % (self.uri_related(), field.name)
-            context = RequestContext(resource_class=field.relation, related_field=field, bulk=field.many)
+            context = RequestContext(resource_manager=self,
+                    resource_class=field.relation,
+                    related_field=field,
+                    bulk=field.many)
             result.append((uri, context, self.dispatch))
             
             related_uri_key = field.relation.desc.manager.uri_key()
             uri = r"%s/%s/(?P<%s>\w+)(\?.*)?$" % (self.uri_related(), field.name, related_uri_key)
-            context = RequestContext(resource_class=field.relation, related_field=field, bulk=False)
+            context = RequestContext(resource_manager=self,
+                    resource_class=field.relation,
+                    related_field=field,
+                    bulk=False)
             result.append((uri, context, self.dispatch))
         
         uri = r"%s(\?.*)?$" % self.uri_base()
-        context = RequestContext(resource_class=self.resource_class, bulk=True)
+        context = RequestContext(resource_manager=self,
+                resource_class=self.resource_class,
+                bulk=True)
         result.append((uri, context, self.dispatch))
         return result
 
@@ -81,7 +93,7 @@ class ResourceManager(object):
         try:
             response_code = 200
 
-            if context.resource_class is self.resource_class and context.related_field is None:
+            if context.resource_class:
                 if request.method() == "GET":
                     if context.bulk:
                         result = context.query.all()
@@ -101,29 +113,6 @@ class ResourceManager(object):
                 elif request.method() == "DELETE":
                     if context.bulk:
                         result = context.query.bulk_delete(resources=context.data)
-                    else:
-                        result = context.query.delete()
-            
-            elif context.resource_class and context.related_field:
-                if request.method() == "GET":
-                    if context.bulk:
-                        result = context.query.all()
-                    else:
-                        result = context.query.one()
-                elif request.method() == "POST":
-                    if context.bulk:
-                        result = context.query.create_bulk(context.data)
-                    else:    
-                        result = context.query.create(context.data)
-                    response_code = 201
-                elif request.method() == "PUT":
-                    if context.bulk:
-                        result = context.query.bulk_update(context.data)
-                    else:
-                        result = context.query.update(context.data)
-                elif request.method() == "DELETE":
-                    if context.bulk:
-                        result = context.query.bulk_delete(context.data)
                     else:
                         result = context.query.delete()
             else:

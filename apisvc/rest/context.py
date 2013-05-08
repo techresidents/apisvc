@@ -30,18 +30,13 @@ class RequestContext(object):
         self.base_resource_instance = base_resource_instance
     
     def is_direct_resource(self):
-        return self.resource_class == self.resource_manager.resource_class
+        return self.resource_class == self.resource_manager.resource_class \
+                and self.related_field is None
 
     def is_related_resource(self):
         if not self.is_direct_resource() and \
                 self.related_field and \
                 self.related_field.relation is self.resource_class:
-            return True
-        else:
-            return False
-    
-    def is_nested_resource(self):
-        if not self.is_direct_resource() and not self.is_related_resource():
             return True
         else:
             return False
