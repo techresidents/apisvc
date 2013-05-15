@@ -98,7 +98,7 @@ class UserSearchResource(Resource):
             size_option="f_technology_prefs_size")
     f_yrs_experience = RangeFacet(title="Years Experience",
             field="yrs_experience")\
-            .add(0,2).add(3,5).add(6, 100, name="6+")
+            .add(0,2).add(3,5).add(6, 10).add(11, 100, name="10+")
     f_joined = DateRangeFacet(title="Joined", field="joined")\
             .add("now-7d", "now", name="Last 7 days")\
             .add("now-30d", "now", name="Last 30 days")\
