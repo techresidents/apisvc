@@ -46,6 +46,11 @@ CDN_STREAMING_URL = 'http://fb45a9b6d35ebef42d2b-2f317612417b37502ddedebdeb21ff4
 ES_ENDPOINT = 'http://localdev:9200'
 ES_POOL_SIZE = 4
 
+#Twilio settings
+TWILIO_ACCOUNT_SID ='ACa266ba02381acb66ac7897116e9e4a3c'
+TWILIO_AUTH_TOKEN = '4a3a87d62a4b6d34199fbc71a96742a6'
+TWILIO_APPLICATION_SID = 'AP6d55d454b0ef42648118136d1bd5c54d'
+
 #Logging settings
 LOGGING = {
     "version": 1,

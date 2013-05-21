@@ -1,19 +1,13 @@
 from trsvcscore.db.enum import Enum
-from trsvcscore.db.models import ChatArchive, ChatArchiveType, MimeType
+from trsvcscore.db.models import ChatArchive, MimeType
 from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
-from resources.chat_session import ChatSessionResource
+from resources.chat import ChatResource
 from settings import CDN_URL, CDN_SSL_URL, CDN_STREAMING_URL
-
-class ArchiveTypeEnum(Enum):
-    model_class = ChatArchiveType
-    key_column = "name"
-    value_column = "id"
-    db_session_factory = db_session_factory
 
 class MimeTypeEnum(Enum):
     model_class = MimeType
@@ -67,9 +61,8 @@ class ArchiveResource(Resource):
         limit = 20
 
     id = fields.IntegerField(primary_key=True, readonly=True)
-    type = EnumField(ArchiveTypeEnum ,model_attname="type_id", readonly=True)
     mime_type = EnumField(MimeTypeEnum, model_attname="mime_type_id", readonly=True)
-    chat_session_id = fields.EncodedField(readonly=True)
+    chat_id = fields.EncodedField(readonly=True)
     path = fields.StringField(readonly=True)
     url = CdnUrlField(cdn_url=CDN_URL, model_attname="path", readonly=True)
     ssl_url = CdnUrlField(cdn_url=CDN_SSL_URL, model_attname="path", readonly=True)
@@ -81,7 +74,7 @@ class ArchiveResource(Resource):
     waveform_path = fields.StringField(nullable=True, readonly=True)
     waveform_url = CdnUrlField(cdn_url=CDN_URL, model_attname="waveform_path", nullable=True, readonly=True)
 
-    chat_session = fields.EncodedForeignKey(ChatSessionResource, backref="archives", model_name="chat_session", model_attname="chat_session_id")
+    chat = fields.EncodedForeignKey(ChatResource, backref="archives", model_name="chat", model_attname="chat_id")
 
     objects = ArchiveManager(db_session_factory)
     authenticator = SessionAuthenticator()

@@ -46,14 +46,15 @@ class ReverseForeignKey(RelatedField):
         setattr(container_class, name, RelatedDescriptor(self))
 
 class ForeignKey(RelatedField):
-    def __init__(self, relation, backref=None, reverse=None, **kwargs):
+    def __init__(self, relation, backref=None, reverse=None, attname=None, **kwargs):
+        self._attname = attname
         super(ForeignKey, self).__init__(many=False, default=None, **kwargs)
         self.relation = relation
         self.backref = backref
         self.reverse = reverse
 
     def get_attname(self):
-        return "%s_id" % self.name
+        return self._attname if self._attname else "%s_id" % self.name
 
     def contribute_to_class(self, container_class, name):
         super(ForeignKey, self).contribute_to_class(container_class, name)

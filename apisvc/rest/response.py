@@ -11,3 +11,10 @@ class Response(object):
                 return True
         else:
             return False
+
+class ExceptionResponse(Response):
+    def __init__(self, exception):
+        super(ExceptionResponse, self).__init__(
+                data=exception.user_message,
+                code=exception.code)
+        self.exception = exception

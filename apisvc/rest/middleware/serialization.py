@@ -4,7 +4,7 @@ from rest.collection import ResourceCollection
 from rest.error import Error
 from rest.exceptions import ValidationError
 from rest.middleware.base import RestMiddleware
-from rest.response import Response
+from rest.response import ExceptionResponse
 from rest.resource import ResourceBase
 from rest.serialization import serialize
 
@@ -37,7 +37,7 @@ class SerializationMiddleware(RestMiddleware):
                             resource=result,
                             format=format,
                             data=body)
-                except:                
+                except:
                     result = context.resource_class()
                     context.data = serializer.deserialize(
                             api=self.api,
@@ -47,11 +47,11 @@ class SerializationMiddleware(RestMiddleware):
                             data=body)
                     context.bulk = False
             except ValidationError as error:
-                logging.warning(str(error))
-                response = Response(code=400, data="invalid data")
+                logging.warning(repr(error))
+                response = ExceptionResponse(error)
             except Exception as error:
                 logging.exception(error)
-                response = Response(code=400, data="invalid data")
+                response = ExceptionResponse(ValidationError)
         else:
             context.data = None
         return response

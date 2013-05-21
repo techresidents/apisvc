@@ -47,6 +47,8 @@ class StructContext(object):
         self.parent_context = parent_context
         self.position = 0
     def read(self):
+        if self.json_data is None:
+            return None
         keys = self.json_data.keys()
         key = keys[self.position]
         value = self.json_data[key]
@@ -129,6 +131,11 @@ class JsonFormatter(Formatter):
                 parent_context = None
                 json_data = json.loads(self.buffer.read())
             
+            #if no fields return Field.STOP.
+            #this can happen for nullable structs
+            if json_data is None:
+                return Field.STOP
+
             field_attname = json_data.keys()[0]
             context = FieldContext(parent_context, json_data, field_attname)
             self.context_stack.append(context)

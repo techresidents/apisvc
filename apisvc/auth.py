@@ -4,7 +4,7 @@ from factory.session import session_store_pool
 from rest.authorization import MacroAuthorizer, FilterAuthorizer
 from rest.exceptions import AuthenticationError
 from rest.middleware.base import RestMiddleware
-from rest.response import Response
+from rest.response import ExceptionResponse
 
 class SessionAuthenticationMiddleware(RestMiddleware):
     def process_request(self, context, request, **kwargs):
@@ -24,11 +24,11 @@ class SessionAuthenticationMiddleware(RestMiddleware):
             authenticator = context.resource_class.desc.authenticator
             authenticator.authenticate_request(context, request, **kwargs)
         except AuthenticationError as error:
-            logging.warning(str(error))
-            response = Response(data="unauthorized", code=401)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="unauthorized", code=401)
+            return ExceptionResponse(AuthenticationError())
         
         return response
 

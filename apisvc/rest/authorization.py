@@ -113,7 +113,7 @@ class ResourceAuthorizer(object):
                 if context.bulk:
                     query = self.authorize_bulk_create_query(context, request, query)
                 else:
-                    query = self.authorize_bulk_create_query(context, request, query)
+                    query = self.authorize_create_query(context, request, query)
             elif request.method() == "PUT":
                 if context.bulk:
                     query = self.authorize_bulk_update_query(context, request, query)

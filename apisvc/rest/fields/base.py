@@ -251,7 +251,7 @@ class TimestampField(FloatField):
         return self.validate(formatter.read_timestamp())
 
     def write(self, formatter, value):
-        self.write_timestamp(self.validate(value))
+        formatter.write_timestamp(self.validate(value))
 
 class ListField(Field):
     def __init__(self, field=None, **kwargs):
@@ -366,43 +366,58 @@ class StructField(Field):
 
     def validate(self, value):
         value = super(StructField, self).validate(value)
-        for field in self.struct_class.desc.fields:
-            attribute = getattr(value, field.attname)
-            field_value = field.validate(attribute)
-            setattr(value, field.attname, field_value)
+        if value is not None:
+            for field in self.struct_class.desc.fields:
+                attribute = getattr(value, field.attname)
+                field_value = field.validate(attribute)
+                setattr(value, field.attname, field_value)
         return value
 
     def validate_for_model(self, value):
         value = super(StructField, self).validate_for_model(value)
-        for field in self.struct_class.desc.fields:
-            attribute = getattr(value, field.model_attname)
-            field_value = field.validate_for_model(attribute)
-            setattr(value, field.model_attname, field_value)
+        if value is not None:
+            for field in self.struct_class.desc.fields:
+                attribute = getattr(value, field.model_attname)
+                field_value = field.validate_for_model(attribute)
+                setattr(value, field.model_attname, field_value)
         return value
 
     def read(self, formatter):
         result = self.get_default()
         formatter.read_struct_begin()
+        fields_read = 0
         while True:
             field_name = formatter.read_field_begin()
             if field_name == Field.STOP:
                 break
-            field = self.struct_class.desc.fields_by_name[field_name]
+            
+            fields_read += 1
+            field = self.struct_class.desc.fields_by_name.get(field_name)
+            if field is None:
+                raise RuntimeError("invalid field: %s" % field_name)
             field_value = field.read(formatter)
-            setattr(result, field.attname, field_value)
+            if not field.readonly:
+                setattr(result, field.attname, field_value)
             formatter.read_field_end()
-        formatter.write_struct_end()
+        formatter.read_struct_end()
+
+        if fields_read == 0:
+            result = None
+
         return result
 
     def write(self, formatter, value):
         write_fields = lambda fields: [f for f in fields if not f.hidden]
         value = self.validate(value)
 
-        formatter.write_struct_begin()
-        for field in write_fields(self.struct_class.desc.fields):
-            formatter.write_field_begin(field.attname, field)
-            field_value = getattr(value, field.attname)
-            field.write(formatter, field_value)
-            formatter.write_field_end()
-        formatter.write_field_stop()
-        formatter.write_struct_end()
+        if value is None:
+            formatter.write_dynamic(None)
+        else:
+            formatter.write_struct_begin()
+            for field in write_fields(self.struct_class.desc.fields):
+                formatter.write_field_begin(field.attname, field)
+                field_value = getattr(value, field.attname)
+                field.write(formatter, field_value)
+                formatter.write_field_end()
+            formatter.write_field_stop()
+            formatter.write_struct_end()
