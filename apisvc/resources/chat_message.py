@@ -1,6 +1,6 @@
 from trchatsvc.gen import TChatService
 from trchatsvc.gen.ttypes import Message, MessageHeader, \
-        ChatStateMessage, UserStateMessage, \
+        ChatStatusMessage, UserStatusMessage, \
         InvalidMessageException, InvalidChatException
 from tridlcore.gen.ttypes import RequestContext
 from trsvcscore.hashring.zoo import ZookeeperServiceHashring
@@ -136,11 +136,11 @@ class MessageHeaderStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
     timestamp = fields.TimestampField(readonly=True, nullable=True)
 
-class UserStateMessageStruct(Struct):
+class UserStatusMessageStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
     state = fields.IntegerField()
 
-class ChatStateMessageStruct(Struct):
+class ChatStatusMessageStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
     state = fields.IntegerField()
 
@@ -166,15 +166,15 @@ class ChatMessageResource(Resource):
             nullable=True)
 
     user_state_message = fields.StructField(
-            UserStateMessageStruct,
-            UserStateMessage,
+            UserStatusMessageStruct,
+            UserStatusMessage,
             nullable=True,
             default=None,
             model_attname="userStateMessage")
 
     chat_state_message = fields.StructField(
-            ChatStateMessageStruct,
-            ChatStateMessage,
+            ChatStatusMessageStruct,
+            ChatStatusMessage,
             nullable=True,
             default=None,
             model_attname="chatStateMessage")
