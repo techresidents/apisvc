@@ -1,4 +1,5 @@
 from resources.topic import TopicResource
+from resources.talking_point import TalkingPointResource
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource

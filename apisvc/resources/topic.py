@@ -85,6 +85,10 @@ class TopicResource(Resource):
         bulk_methods = ["GET"]
         related_methods = {
             "children": ["GET"],
+            "talking_points": ["GET"],
+        }
+        related_bulk_methods = {
+            "talking_points": ["GET"],
         }
         filtering = {
             "id": ["eq"],
@@ -95,6 +99,7 @@ class TopicResource(Resource):
         with_relations = [
             r"^tree$",
             r"^children$",
+            r"^talking_points$",
             ]
         ordering = ["id"]
         limit = 20
