@@ -1,6 +1,6 @@
 from trchatsvc.gen import TChatService
-from trchatsvc.gen.ttypes import Message, MessageHeader, \
-        ChatStatusMessage, UserStatusMessage, \
+from trchatsvc.gen.ttypes import Message, MessageType, MessageHeader, \
+        ChatStatus, ChatStatusMessage, UserStatus, UserStatusMessage, \
         InvalidMessageException, InvalidChatException
 from tridlcore.gen.ttypes import RequestContext
 from trsvcscore.hashring.zoo import ZookeeperServiceHashring
@@ -69,11 +69,12 @@ class ChatMessageQuery(Query):
         try:
             service = self._get_service_proxy(chat_token)
             model = self.resource_to_model(resource)
+
             model = service.sendMessage(
                     requestContext=self._request_context,
                     message=model,
-                    N=1,
-                    W=1)
+                    N=-1,
+                    W=-1)
 
             resource = self.model_to_resource(model)
             return resource
@@ -105,10 +106,10 @@ class ChatMessageQuery(Query):
                     block=True,
                     timeout=10)
             
-            start, end = self.slices
-            messages = messages[start:end]
             resources = self.resource_class.Collection()
             resources.total_count = len(messages)
+            start, end = self.slices
+            messages = messages[start:end]
             for message in messages:
                 resources.append(self.model_to_resource(message))
             return resources
@@ -131,18 +132,20 @@ class ChatMessageQuery(Query):
 
 class MessageHeaderStruct(Struct):
     id = fields.StringField(nullable=True)
-    type = fields.IntegerField()
+    type = fields.EnumField(MessageType._NAMES_TO_VALUES)
     chat_token = fields.StringField(model_attname="chatToken")
     user_id = fields.EncodedField(model_attname="userId")
     timestamp = fields.TimestampField(readonly=True, nullable=True)
 
 class UserStatusMessageStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
-    state = fields.IntegerField()
+    status = fields.EnumField(UserStatus._NAMES_TO_VALUES)
+    first_name = fields.StringField(nullable=True, model_attname="firstName")
+    participant = fields.IntegerField(nullable=True)
 
 class ChatStatusMessageStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
-    state = fields.IntegerField()
+    status = fields.EnumField(ChatStatus._NAMES_TO_VALUES)
 
 
 class ChatMessageResource(Resource):
@@ -165,19 +168,19 @@ class ChatMessageResource(Resource):
             MessageHeader,
             nullable=True)
 
-    user_state_message = fields.StructField(
+    user_status_message = fields.StructField(
             UserStatusMessageStruct,
             UserStatusMessage,
             nullable=True,
             default=None,
-            model_attname="userStateMessage")
+            model_attname="userStatusMessage")
 
-    chat_state_message = fields.StructField(
+    chat_status_message = fields.StructField(
             ChatStatusMessageStruct,
             ChatStatusMessage,
             nullable=True,
             default=None,
-            model_attname="chatStateMessage")
+            model_attname="chatStatusMessage")
 
     objects = ChatMessageManager(zk.zookeeper_client)
     authenticator = SessionAuthenticator()

@@ -30,6 +30,7 @@ class ChatQuery(AlchemyQuery):
     def __init__(self, resource_class, transaction_factory):
         super(ChatQuery, self).__init__(resource_class, transaction_factory)
         self.max_participants = 2
+        self.max_duration = 1800
 
     def create(self, **kwargs):
         if not self.empty():
@@ -41,6 +42,12 @@ class ChatQuery(AlchemyQuery):
 
         if resource.max_participants > self.max_participants:
             msg = "max participants may not exceed %s" % self.max_participants
+            raise InvalidQuery(message=msg,
+                    developer_message=msg,
+                    user_message=msg)
+
+        if resource.max_duration > self.max_participants:
+            msg = "max duration may not exceed %s" % self.max_duration
             raise InvalidQuery(message=msg,
                     developer_message=msg,
                     user_message=msg)
@@ -91,6 +98,7 @@ class ChatResource(Resource):
     topic_id = fields.EncodedField()
     start = fields.DateTimeField(nullable=True)
     end = fields.DateTimeField(nullable=True)
+    max_duration = fields.IntegerField()
     max_participants = fields.IntegerField()
     no_participants = fields.IntegerField(nullable=True, readonly=True)
 

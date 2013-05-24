@@ -322,6 +322,37 @@ class DictField(Field):
                 formatter.write_dynamic(value)
         formatter.write_dict_end()
 
+class EnumField(StringField):
+    def __init__(self, keys_to_values, values_to_keys=None,  **kwargs):
+        super(EnumField, self).__init__(**kwargs)
+        self.keys_to_values = keys_to_values
+        self.values_to_keys = values_to_keys
+        if self.values_to_keys is None:
+            self.values_to_keys = {}
+            for key, value in self.keys_to_values.items():
+                self.values_to_keys[value] = key
+
+    def to_model(self, value):
+        value = super(EnumField, self).to_model(value)
+        if value in self.values_to_keys:
+            pass
+        elif value in self.keys_to_values:
+            value = self.keys_to_values[value]
+        else:
+            raise ValidationError("'%s' invalid type" % value)
+        return value
+
+    def to_python(self, value):
+        value = super(EnumField, self).to_python(value)
+        if value in self.keys_to_values:
+            pass
+        else:
+            try:
+                value = self.values_to_keys[int(value)]
+            except:
+                raise ValidationError("'%s' invalid type" % value)
+        return value
+
 class StructField(Field):
     def __init__(self, struct_class, model_struct_class=None, **kwargs):
         if "default" not in kwargs:
@@ -383,7 +414,7 @@ class StructField(Field):
         return value
 
     def read(self, formatter):
-        result = self.get_default()
+        result = self.get_default() or self.struct_class()
         formatter.read_struct_begin()
         fields_read = 0
         while True:
