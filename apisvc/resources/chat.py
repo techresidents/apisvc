@@ -46,7 +46,7 @@ class ChatQuery(AlchemyQuery):
                     developer_message=msg,
                     user_message=msg)
 
-        if resource.max_duration > self.max_participants:
+        if resource.max_duration > self.max_duration:
             msg = "max duration may not exceed %s" % self.max_duration
             raise InvalidQuery(message=msg,
                     developer_message=msg,
