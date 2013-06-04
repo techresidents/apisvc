@@ -135,7 +135,8 @@ class MessageHeaderStruct(Struct):
     type = fields.EnumField(MessageType._NAMES_TO_VALUES)
     chat_token = fields.StringField(model_attname="chatToken")
     user_id = fields.EncodedField(model_attname="userId")
-    timestamp = fields.TimestampField(readonly=True, nullable=True)
+    timestamp = fields.TimestampField(nullable=True)
+    skew = fields.TimestampField(readonly=True, nullable=True)
 
 class UserStatusMessageStruct(Struct):
     user_id = fields.EncodedField(model_attname="userId")
@@ -165,8 +166,7 @@ class ChatMessageResource(Resource):
 
     header = fields.StructField(
             MessageHeaderStruct,
-            MessageHeader,
-            nullable=True)
+            MessageHeader)
 
     user_status_message = fields.StructField(
             UserStatusMessageStruct,

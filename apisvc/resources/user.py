@@ -45,7 +45,8 @@ class UserResource(Resource):
             "position_prefs": ["GET"],
             "highlight_sessions": ["GET"],
             "applications": ["GET"],
-            "job_notes": ["GET"]
+            "job_notes": ["GET"],
+            "chat_reels": ["GET"]
         }
         related_bulk_methods = {
             "chat_sessions": ["GET"],
@@ -55,7 +56,8 @@ class UserResource(Resource):
             "position_prefs": ["GET"],
             "highlight_sessions": ["GET"],
             "applications": ["GET"],
-            "job_notes": ["GET"]
+            "job_notes": ["GET"],
+            "chat_reels": ["GET"]
         }
         filtering = {
             "id": ["eq", "in"],
