@@ -51,7 +51,8 @@ class SerializationMiddleware(RestMiddleware):
                 response = ExceptionResponse(error)
             except Exception as error:
                 logging.exception(error)
-                response = ExceptionResponse(ValidationError)
+                response = ExceptionResponse(ValidationError(
+                    "invalid request"))
         else:
             context.data = None
         return response
