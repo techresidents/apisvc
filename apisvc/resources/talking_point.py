@@ -7,6 +7,15 @@ from rest.resource import Resource
 from resources.user import UserResource
 from resources.topic import TopicResource
 
+class TalkingPointManager(AlchemyResourceManager):
+    def __init__(self, *args, **kwargs):
+        super(TalkingPointManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "order_by" not in kwargs:
+            kwargs["order_by"] = "rank"
+        return super(TalkingPointManager, self).build_all_query(**kwargs)
+
 class TalkingPointResource(Resource):
     class Meta:
         resource_name = "talking_points"
@@ -23,7 +32,7 @@ class TalkingPointResource(Resource):
         related_bulk_methods = {
         }
         with_relations = []
-        ordering = ["id"]
+        ordering = ["id", "rank"]
 
     #fields
     id = fields.IntegerField(primary_key=True)
@@ -37,5 +46,5 @@ class TalkingPointResource(Resource):
     topic = fields.EncodedForeignKey(TopicResource, backref="talking_points", model_name="topic", model_attname="topic_id")
 
     #objects
-    objects = AlchemyResourceManager(db_session_factory)
+    objects = TalkingPointManager(db_session_factory)
     authenticator = SessionAuthenticator()

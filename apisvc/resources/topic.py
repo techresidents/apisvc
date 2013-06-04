@@ -89,12 +89,14 @@ class TopicResource(Resource):
         }
         related_bulk_methods = {
             "talking_points": ["GET"],
+            "chats": ["GET"],
         }
         filtering = {
             "id": ["eq"],
             "parent_id": ["eq"],
             "children": ["eq"],
             "parent": ["eq"],
+            "title": ["eq", "istartswith"],
         }    
         with_relations = [
             r"^tree$",
