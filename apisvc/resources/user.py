@@ -38,22 +38,22 @@ class UserResource(Resource):
         bulk_methods = ["GET"]
         related_methods = {
             "tenant": ["GET"],
-            "chat_sessions": ["GET"],
+            "chats": ["GET"],
+            "chat_reels": ["GET"],
             "skills": ["GET"],
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"],
             "applications": ["GET"],
             "job_notes": ["GET"]
         }
         related_bulk_methods = {
-            "chat_sessions": ["GET"],
+            "chats": ["GET"],
+            "chat_reels": ["GET"],
             "skills": ["GET"],
             "location_prefs": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
-            "highlight_sessions": ["GET"],
             "applications": ["GET"],
             "job_notes": ["GET"]
         }
@@ -62,18 +62,16 @@ class UserResource(Resource):
             "tenant_id": ["eq"],
             "tenant__id": ["eq"],
             "technology_prefs__id": ["eq"],
-            "chat_sessions__id": ["eq"],
-            "position_prefs__id": ["eq"],
-            "highlight_sessions__id": ["eq"]
+            "chats__id": ["eq"],
+            "position_prefs__id": ["eq"]
         }
         with_relations = [
             r"^tenant$",
-            r"^chat_sessions(__chat)?(__topic)?$",
+            r"^chats(__topic)?$",
             r"^location_prefs$",
             r"^skills(__technology)?$",
             r"^technology_prefs$",
-            r"^position_prefs$",
-            r"^highlight_sessions(__chat_session)?(__chat)?(__topic)?$"
+            r"^position_prefs$"
             ]
         ordering = []
         limit = 20

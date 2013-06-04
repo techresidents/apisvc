@@ -30,6 +30,7 @@ class ChatReelResource(Resource):
 
         filtering = {
             "id": ["eq"],
+            "user_id": ["eq"],
             "user__id": ["eq"],
             "chat__id": ["eq"]
         }    

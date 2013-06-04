@@ -67,6 +67,7 @@ class ChatResource(Resource):
             "users": ["GET"],
             "chat_credential": ["POST"],
             "archives": ["GET"],
+            "chat_participants": ["GET"],
         }
         related_bulk_methods = {
             "users": ["GET"],
@@ -77,7 +78,9 @@ class ChatResource(Resource):
             "id": ["eq"],
             "start": ["eq", "lt", "lte", "gt", "gte"],
             "end": ["eq", "lt", "lte", "gt", "gte"],
-            "users__id": ["eq"]
+            "users__id": ["eq"],
+            "topic__id": ["eq"],
+            "topic__title": ["eq", "in", "istartswith"],
         }    
         with_relations = [
             r"^archives$",
@@ -85,7 +88,7 @@ class ChatResource(Resource):
             r"^users$",
             r"^chat_participants$"
             ]
-        ordering = ["id"]
+        ordering = ["id", "start"]
 
     id = fields.EncodedField(primary_key=True)
     topic_id = fields.EncodedField()
