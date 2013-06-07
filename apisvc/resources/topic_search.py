@@ -1,0 +1,77 @@
+from factory.db import db_session_factory
+from trsvcscore.db.enum import Enum
+from factory.es import es_client_pool
+
+from trsvcscore.db.models import Topic, TopicType
+
+from rest import fields
+from rest.alchemy.fields import EnumField
+from rest.authentication import SessionAuthenticator
+from rest.es.facet import RangeFacet
+from rest.es.fields import MultiMatchQueryField
+from rest.es.manager import ElasticSearchManager
+from rest.resource import Resource
+from rest.struct import Struct
+from resources.topic import TopicResource
+
+
+class TopicStruct(Struct):
+    id = fields.IntegerField()
+    type_id = fields.IntegerField()
+    type = fields.StringField()
+    duration = fields.IntegerField()
+    title = fields.StringField()
+    description = fields.StringField()
+    recommended_participants = fields.IntegerField()
+    rank = fields.IntegerField()
+    public = fields.BooleanField()
+    active = fields.BooleanField()
+    level = fields.IntegerField()
+
+class TopicTypeEnum(Enum):
+    model_class = TopicType
+    key_column = "name"
+    value_column = "id"
+    db_session_factory = db_session_factory
+
+class TopicSearchResource(Resource):
+    class Meta:
+        resource_name = "search"
+        es_index = "topics"
+        es_doc = "topic"
+        bulk_methods = ["GET"]
+        filtering = {
+            "q": ["eq"],
+            "duration": ["eq", "in", "range", "ranges"]
+        }
+        with_relations = [
+            "^topic$"
+        ]
+        ordering = []
+        limit = 20
+
+    #fields
+    id = fields.IntegerField(primary_key=True)
+    topic_id = fields.IntegerField(model_attname='id')
+    type = fields.StringField()
+    title = fields.StringField()
+    description = fields.StringField()
+    #subtopics = fields.StringField(hidden=true) TODO keep commented out if possible
+    tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
+    duration = fields.IntegerField()
+    q = MultiMatchQueryField(
+        es_fields=['title^10', 'description^7', 'subtopic_summary^1'],
+        nullable=True)
+
+    #related fields
+    topic = fields.EncodedForeignKey(TopicResource, backref="searches+")
+
+    #facets
+    f_duration = RangeFacet(title="Duration", field="duration").\
+        add(0, 300, name="0 to 5 mins").\
+        add(301, 600, name="5 to 10 mins").\
+        add(601, 3600, name="10+ mins")
+
+    #objects
+    objects = ElasticSearchManager(es_client_pool)
+    authenticator = SessionAuthenticator()

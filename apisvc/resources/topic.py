@@ -124,3 +124,7 @@ class TopicResource(Resource):
 
     objects = TopicManager(db_session_factory)
     authorizer = UserAuthorizer(['user', 'user_id'], ["GET"])
+
+#Add subresources with cirucular dependency
+from resources.topic_search import TopicSearchResource
+TopicResource.add_to_class('search', TopicSearchResource())
