@@ -47,20 +47,21 @@ class TopicSearchResource(Resource):
         with_relations = [
             "^topic$"
         ]
-        ordering = []
+        ordering = [
+            "title"
+        ]
         limit = 20
 
     #fields
-    id = fields.IntegerField(primary_key=True)
-    topic_id = fields.IntegerField(model_attname='id')
+    id = fields.EncodedField(primary_key=True)
+    topic_id = fields.EncodedField(model_attname='id')
     type = fields.StringField()
     title = fields.StringField()
     description = fields.StringField()
-    #subtopics = fields.StringField(hidden=true) TODO keep commented out if possible
     tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
     duration = fields.IntegerField()
     q = MultiMatchQueryField(
-        es_fields=['title^10', 'description^7', 'subtopic_summary^1'],
+        es_fields=['title^6', 'description^3', 'subtopic_summary^1'],
         nullable=True)
 
     #related fields
@@ -68,9 +69,9 @@ class TopicSearchResource(Resource):
 
     #facets
     f_duration = RangeFacet(title="Duration", field="duration").\
-        add(0, 300, name="0 to 5 mins").\
-        add(301, 600, name="5 to 10 mins").\
-        add(601, 3600, name="10+ mins")
+        add(0, 301, name="0 to 5 mins").\
+        add(302, 601, name="5 to 10 mins").\
+        add(602, 3600, name="10+ mins")
 
     #objects
     objects = ElasticSearchManager(es_client_pool)
