@@ -68,6 +68,7 @@ class UserResource(Resource):
         with_relations = [
             r"^tenant$",
             r"^chats(__topic)?$",
+            r"^chat_reels(__chat(__topic)?)?$",
             r"^location_prefs$",
             r"^skills(__technology)?$",
             r"^technology_prefs$",

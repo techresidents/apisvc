@@ -61,7 +61,7 @@ class ArchiveResource(Resource):
         filtering = {
             "id": ["eq"],
             "public": ["eq"],
-            "chat_session__id": ["eq"]
+            "chat__id": ["eq"]
         }    
 
         limit = 20

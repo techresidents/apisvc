@@ -38,6 +38,11 @@ RIAK_PORT = 8087
 RIAK_SESSION_BUCKET = "tr_sessions"
 RIAK_SESSION_POOL_SIZE = 4
 
+#Twilio settings
+TWILIO_ACCOUNT_SID = "AC4b7ade305aa88344e60c0289b60df1ce"
+TWILIO_AUTH_TOKEN = "6cf8febae940693197025e6a8c041bfa"
+TWILIO_APPLICATION_SID = "AP825c812d201347d68cbeeadec974543c"
+
 #Rackspace CDN settings
 CDN_URL = 'http://e76e4391c97b2f87b5c0-092292abadceda5fbd10b6de4be44b7f.r11.cf1.rackcdn.com'
 CDN_SSL_URL = 'https://ca6ad98c8e86bf5d358c-092292abadceda5fbd10b6de4be44b7f.ssl.cf1.rackcdn.com'
