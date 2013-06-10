@@ -8,6 +8,7 @@ gevent==0.13.7
 gevent-zeromq==0.2.2
 protobuf==2.4.1
 riak==1.4.0
+twilio==3.4.5
 
 git+ssh://dev.techresidents.com/tr/repos/techresidents/lib/python/zookeeper.git@3.3.5#egg=zookeeper
 git+ssh://dev.techresidents.com/tr/repos/techresidents/lib/python/trpycore.git@integration#egg=trpycore

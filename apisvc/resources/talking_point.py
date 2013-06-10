@@ -24,7 +24,7 @@ class TalkingPointResource(Resource):
         bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
-            "user_id": ["eq"],
+            "user_id": ["eq", "in"],
             "topic__id": ["eq"]
         }
         related_methods = {

@@ -1,5 +1,5 @@
 from trsvcscore.db.enum import Enum
-from trsvcscore.db.models import ChatArchive, MimeType
+from trsvcscore.db.models import ChatArchive, ChatArchiveType, MimeType
 from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.fields import EnumField
@@ -8,6 +8,12 @@ from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
 from resources.chat import ChatResource
 from settings import CDN_URL, CDN_SSL_URL, CDN_STREAMING_URL
+
+class ChatArchiveTypeEnum(Enum):
+    model_class = ChatArchiveType
+    key_column = "name"
+    value_column = "id"
+    db_session_factory = db_session_factory
 
 class MimeTypeEnum(Enum):
     model_class = MimeType
@@ -61,6 +67,7 @@ class ArchiveResource(Resource):
         limit = 20
 
     id = fields.IntegerField(primary_key=True, readonly=True)
+    type = EnumField(ChatArchiveTypeEnum, model_attname="type_id", readonly=True)
     mime_type = EnumField(MimeTypeEnum, model_attname="mime_type_id", readonly=True)
     chat_id = fields.EncodedField(readonly=True)
     path = fields.StringField(readonly=True)
