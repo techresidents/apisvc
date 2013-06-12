@@ -1,8 +1,5 @@
 from factory.db import db_session_factory
-from trsvcscore.db.enum import Enum
 from factory.es import es_client_pool
-
-from trsvcscore.db.models import Topic, TopicType
 
 from rest import fields
 from rest.alchemy.fields import EnumField
@@ -12,7 +9,7 @@ from rest.es.fields import MultiMatchQueryField
 from rest.es.manager import ElasticSearchManager
 from rest.resource import Resource
 from rest.struct import Struct
-from resources.topic import TopicResource
+from resources.topic import TopicResource, TopicTypeEnum
 
 
 class TopicStruct(Struct):
@@ -27,12 +24,6 @@ class TopicStruct(Struct):
     public = fields.BooleanField()
     active = fields.BooleanField()
     level = fields.IntegerField()
-
-class TopicTypeEnum(Enum):
-    model_class = TopicType
-    key_column = "name"
-    value_column = "id"
-    db_session_factory = db_session_factory
 
 class TopicSearchResource(Resource):
     class Meta:
@@ -56,6 +47,7 @@ class TopicSearchResource(Resource):
     id = fields.EncodedField(primary_key=True)
     topic_id = fields.EncodedField(model_attname='id')
     type = fields.StringField()
+    #type = EnumField(TopicTypeEnum, model_attname="type_id")
     title = fields.StringField()
     description = fields.StringField()
     tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
@@ -69,7 +61,7 @@ class TopicSearchResource(Resource):
 
     #facets
     f_duration = RangeFacet(title="Duration", field="duration").\
-        add(0, 301, name="0 to 5 mins").\
+        add(0, 301, name="under 5 mins").\
         add(302, 601, name="5 to 10 mins").\
         add(602, 3600, name="10+ mins")
 
