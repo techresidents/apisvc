@@ -1,9 +1,9 @@
 import logging 
 
 from rest.context import RequestContext
-from rest.exceptions import InvalidQuery, ResourceNotFound, ValidationError
+from rest.exceptions import RestException, InvalidQuery
 from rest.fields import ForeignKey
-from rest.response import Response
+from rest.response import Response, ExceptionResponse
 from rest.query import Query
 from rest.transaction import Transaction
 
@@ -110,27 +110,28 @@ class ResourceManager(object):
                         result = context.query.bulk_update(resources=context.data)
                     else:
                         result = context.query.update(resource=context.data)
+                    if result is None:
+                        response_code = 204
                 elif request.method() == "DELETE":
                     if context.bulk:
                         result = context.query.bulk_delete(resources=context.data)
                     else:
                         result = context.query.delete()
+                    if result is None:
+                        response_code = 204
             else:
                 result = None
-        except (InvalidQuery, ValidationError) as error:
-            logging.warning(str(error))
-            response_code=400
-            result = "invalid query"
-        except ResourceNotFound:
-            response_code = 404
-            result = "resource not found"
+                response_code = 204
+
+            response = Response(code=response_code, data=result)
+        except RestException as error:
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response_code = 500
-            result = "internal error"
+            raise
         
-        result = Response(code=response_code, data=result)
-        return result
+        return response
         
     def build_query(self, **kwargs):
         query = self.query_factory()

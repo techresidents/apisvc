@@ -2,7 +2,7 @@ import logging
 
 from rest.exceptions import InvalidQuery, ValidationError
 from rest.middleware.base import RestMiddleware
-from rest.response import Response
+from rest.response import ExceptionResponse
 
 class QueryBuilderMiddleware(RestMiddleware):
 
@@ -84,14 +84,14 @@ class QueryBuilderMiddleware(RestMiddleware):
             context.query = query
 
         except InvalidQuery as error:
-            logging.warning(str(error))
-            response = Response(data="invalid request", code=400)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except ValidationError as error:
-            logging.warning(str(error))
-            response = Response(data="invalid request", code=400)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="invalid request", code=400)
+            response = ExceptionResponse(InvalidQuery())
         
         return response
 

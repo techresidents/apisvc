@@ -85,16 +85,23 @@ class TopicResource(Resource):
         bulk_methods = ["GET"]
         related_methods = {
             "children": ["GET"],
+            "talking_points": ["GET"],
+        }
+        related_bulk_methods = {
+            "talking_points": ["GET"],
+            "chats": ["GET"],
         }
         filtering = {
             "id": ["eq"],
             "parent_id": ["eq"],
             "children": ["eq"],
             "parent": ["eq"],
+            "title": ["eq", "istartswith"],
         }    
         with_relations = [
             r"^tree$",
             r"^children$",
+            r"^talking_points$",
             ]
         ordering = ["id"]
         limit = 20
@@ -117,3 +124,7 @@ class TopicResource(Resource):
 
     objects = TopicManager(db_session_factory)
     authorizer = UserAuthorizer(['user', 'user_id'], ["GET"])
+
+#Add subresources with cirucular dependency
+from resources.topic_search import TopicSearchResource
+TopicResource.add_to_class('search', TopicSearchResource())

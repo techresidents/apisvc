@@ -4,7 +4,7 @@ from rest.exceptions import AuthenticationError, AuthorizationError
 from rest.middleware.base import RestMiddleware
 from rest.resource import ResourceCollection
 from rest.utils.resource import loaded_resource_map
-from rest.response import Response
+from rest.response import ExceptionResponse
 
 class AuthenticationMiddleware(RestMiddleware):
     def process_request(self, context, request, **kwargs):
@@ -19,15 +19,15 @@ class AuthenticationMiddleware(RestMiddleware):
                 related_authenticator.authenticate_request(context, request, **kwargs)
             else:
                 logging.error("Unknown resource type.")
-                return Response(data="unauthorized", code=401)
+                return ExceptionResponse(AuthenticationError())
         
         except AuthenticationError as error:
-            logging.warning(str(error))
-            return Response(data="unauthorized", code=401)
+            logging.warning(repr(error))
+            return ExceptionResponse(error)
 
         except Exception as error:
             logging.exception(error)
-            return Response(data="unauthorized", code=401)
+            return ExceptionResponse(AuthenticationError())
 
         return None
 
@@ -51,14 +51,14 @@ class AuthorizationMiddleware(RestMiddleware):
                 related_authorizer.authorize_request(context, request, **kwargs)
             else:
                 logging.error("Unknown resource type.")
-                response = Response(data="unauthorized", code=403)
+                response = ExceptionResponse(AuthorizationError())
         
         except AuthorizationError as error:
-            logging.warning(str(error))
-            response = Response(data="unauthorized", code=403)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="unauthorized", code=403)
+            response = ExceptionResponse(AuthorizationError())
         
         return response
 
@@ -77,14 +77,14 @@ class AuthorizationMiddleware(RestMiddleware):
                 response = related_authorizer.authorize_response(context, response, **kwargs)
             else:
                 logging.error("Unknown resource type.")
-                response = Response(data="Unauthorized", code=403)
+                response = ExceptionResponse(AuthorizationError())
         
         except AuthorizationError as error:
-            logging.warning(str(error))
-            response = Response(data="unauthorized", code=403)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="unauthorized", code=403)
+            response = ExceptionResponse(AuthorizationError())
 
         return response
 
@@ -113,7 +113,7 @@ class QueryAuthorizationMiddleware(RestMiddleware):
                 context.query = related_authorizer.authorize_query(context, request, context.query)
             else:
                 logging.error("Unknown resource type.")
-                response = Response(data="unauthorized", code=403)
+                response = ExceptionResponse(AuthorizationError())
 
             resource_map = loaded_resource_map(context.data)
             for resource_class, resources in resource_map.items():
@@ -124,11 +124,11 @@ class QueryAuthorizationMiddleware(RestMiddleware):
                         query=context.query)
         
         except AuthorizationError as error:
-            logging.warning(str(error))
-            response = Response(data="unauthorized", code=403)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="unauthorized", code=403)
+            response = ExceptionResponse(AuthorizationError())
 
         return response
 
@@ -147,7 +147,7 @@ class QueryAuthorizationMiddleware(RestMiddleware):
                 response = related_authorizer.authorize_query_response(context, response, context.query)
             else:
                 logging.error("Unknown resource type.")
-                response = Response(data="unauthorized", code=403)
+                response = ExceptionResponse(AuthorizationError())
             
             resource_map = loaded_resource_map(response.data)
             for resource_class, resources in resource_map.items():
@@ -158,11 +158,11 @@ class QueryAuthorizationMiddleware(RestMiddleware):
                         query=context.query)
 
         except AuthorizationError as error:
-            logging.warning(str(error))
-            response = Response(data="unauthorized", code=403)
+            logging.warning(repr(error))
+            response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            response = Response(data="unauthorized", code=403)
+            response = ExceptionResponse(AuthorizationError())
         return response
 
     def process_exception(self, context, request, exception, **kwargs):

@@ -1,7 +1,8 @@
 from rest.collection import ResourceCollection, ResourceCollectionMetaStruct
 from rest.fields import Field, BooleanField,\
-        StringField, StructField, UriField, \
-        RelatedField, ForeignKey
+        ListField, StringField, StructField, \
+        UriField, RelatedField, ForeignKey
+from rest.option import Option
 from rest.struct import Struct
 
 class ResourceDescription(object):
@@ -119,13 +120,15 @@ class ResourceMeta(type):
         for key, value in attributes.items():
             new_class.add_to_class(key, value)
         
-        #Add parent fields to new class.
+        #Add parent fields/options to new class.
         #Note that currently we do not add any other
         #parent attributes.
         for parent in parents:
             if parent.desc.abstract:
                 for field in parent.desc.fields:
                     new_class.desc.add_field(field)
+                for option in parent.desc.options:
+                    new_class.desc.add_option(option)
 
         
         #Add defaults if subclassed versions not provided
@@ -168,75 +171,10 @@ class ResourceMeta(type):
             setattr(cls, name, value)
 
 
-#class ResourceCollection(object):
-#    @classmethod
-#    def contribute_to_class(cls, resource_class, name):
-#        cls.resource_class = resource_class
-#        resource_class.desc.resource_collection_class = cls
-#        setattr(resource_class, name, cls)
-#
-#    def __init__(self, resources=None):
-#        self.total_count = 0
-#        self.facets = []
-#        self.collection = list(resources) if resources else []
-#    
-#    def __iter__(self):
-#        return iter(self.collection)
-#
-#    def __len__(self):
-#        return len(self.collection)
-#
-#    def append(self, resource):
-#        self.collection.append(resource)
-#    
-#    def extend(self, resources):
-#        self.collection.extend(resources)
-#    
-#    def read(self, formatter, resource_uri=None):
-#        formatter.read_struct_begin()
-#        while True:
-#            field_name = formatter.read_field_begin()
-#            if field_name == Field.STOP:
-#                break
-#            elif field_name == "meta":
-#                ResourceMetaStruct().read(formatter)
-#            elif field_name == "results":
-#                length = formatter.read_list_begin()
-#                for i in range(length):
-#                    resource = self.resource_class()
-#                    resource.read(formatter)
-#                    self.append(resource)
-#                formatter.read_list_end()
-#            else:
-#                raise RuntimeError("read invalid field: %s" % field_name)
-#            formatter.read_field_end()
-#        formatter.read_struct_end()
-#
-#    def write(self, formatter, resource_uri=None):
-#        resource_uri = resource_uri or "/%s" % self.resource_class.desc.resource_name
-#
-#        formatter.write_struct_begin()
-#        formatter.write_field_begin("meta", StructField)
-#        ResourceMetaStruct(
-#            resource_name=self.resource_class.desc.resource_name,
-#            resource_uri=resource_uri,
-#            loaded=True,
-#            many=True,
-#            total_count=self.total_count,
-#            facets=self.facets
-#        ).write(formatter)
-#        formatter.write_field_end()
-#        formatter.write_field_begin("results", ListField)
-#        formatter.write_list_begin(len(self))
-#        for resource in self:
-#            resource.write(formatter)
-#        formatter.write_list_end()
-#        formatter.write_field_end()
-#        formatter.write_struct_end()
-
-
 class ResourceBase(object):
     __metaclass__ = ResourceMeta
+    class Meta:
+        abstract = True
 
     def __init__(self, **kwargs):
         for field in self.desc.fields:
@@ -402,6 +340,11 @@ class SchemaMeta(ResourceMeta):
 
 class Resource(ResourceBase):
     __metaclass__ = SchemaMeta
+    class Meta:
+        abstract = True
+    
+    #TODO support returning subset of fields
+    #fields = Option(field=ListField(StringField))
 
 class ResourceMetaStruct(Struct):
     resource_name = StringField()

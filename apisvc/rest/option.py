@@ -1,4 +1,5 @@
 from rest.exceptions import ValidationError
+from rest.fields import ListField
 
 class Option(object):
     NO_DEFAULT = object()
@@ -42,6 +43,8 @@ class Option(object):
     
     def validate(self, value):
         if self.field:
+            if isinstance(self.field, ListField):
+                value = value.split(',')
             return self.field.validate(value)
         else:
             return value
