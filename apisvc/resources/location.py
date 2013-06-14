@@ -20,6 +20,7 @@ class LocationResource(Resource):
         ordering = ["city", "state"]
     
     id = fields.IntegerField(primary_key=True)
+    region = fields.StringField()
     country = fields.StringField()
     state = fields.StringField()
     city = fields.StringField(nullable=True)

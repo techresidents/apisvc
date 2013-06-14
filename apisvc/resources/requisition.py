@@ -1,5 +1,6 @@
 from trsvcscore.db.enum import Enum
-from trsvcscore.db.models import JobRequisition, JobRequisitionStatus, JobPositionType, JobRequisitionTechnology
+from trsvcscore.db.models import JobRequisition, JobRequisitionStatus, \
+    JobPositionType, JobRequisitionTechnology, Location
 from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.fields import EnumField
@@ -44,6 +45,12 @@ class PositionTypeEnum(Enum):
     value_column = "id"
     db_session_factory = db_session_factory
 
+class LocationEnum(Enum):
+    model_class = Location
+    key_column = "region"
+    value_column = "id"
+    db_session_factory = db_session_factory
+
 class RequisitionResource(Resource):
     class Meta:
         resource_name = "requisitions"
@@ -65,21 +72,19 @@ class RequisitionResource(Resource):
             "requisition_technologies": ["GET"]
         }
         with_relations = [
-            r"^location$",
             r"^requisition_technologies(__technology)?$"
         ]
         ordering = [
             "created",
             "employer_requisition_identifier",
             "title",
-            "status",
-            "location__state"
+            "status"
         ]
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
     user_id = fields.EncodedField()
-    location_id = fields.IntegerField()
+    location = EnumField(LocationEnum, model_attname="location_id")
     created = fields.DateTimeField(nullable=True, readonly=True)
     status = EnumField(RequisitionStatusEnum, model_attname="status_id")
     position_type = EnumField(PositionTypeEnum, model_attname="position_type_id")
@@ -94,7 +99,6 @@ class RequisitionResource(Resource):
 
     tenant = fields.EncodedForeignKey(TenantResource, backref="requisitions")
     user = fields.EncodedForeignKey(UserResource, backref="requisitions")
-    location = fields.ForeignKey(LocationResource, backref="requisitions+")
     technologies = fields.ManyToMany(TechnologyResource, through=JobRequisitionTechnology, backref="requisitions+")
 
     objects = AlchemyResourceManager(db_session_factory)
