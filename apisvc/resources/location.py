@@ -29,3 +29,7 @@ class LocationResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+
+#Add subresources with cirucular dependency
+from resources.location_search import LocationSearchResource
+LocationResource.add_to_class('search', LocationSearchResource())
