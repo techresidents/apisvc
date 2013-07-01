@@ -71,7 +71,7 @@ class UserSearchResource(Resource):
     location_prefs = fields.ListField(field=fields.StructField(LocationPref, dict))
     position_prefs = fields.ListField(field=fields.StructField(PositionPref, dict))
     technology_prefs = fields.ListField(field=fields.StructField(TechnologyPref, dict))
-    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.name'],
+    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.region'],
             nullable=True)
     
     #related fields

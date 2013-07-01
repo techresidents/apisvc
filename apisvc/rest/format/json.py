@@ -160,7 +160,7 @@ class JsonFormatter(Formatter):
         context = self.context_stack[-1]
         isodate = context.read()
         if isodate:
-            value = datetime.datetime.strptime(isodate, '%Y-%m-%d').date()
+            value = tz.iso_to_utc(isodate)
         return value
 
     def read_datetime(self):
@@ -278,7 +278,7 @@ class JsonFormatter(Formatter):
         context = self.context_stack[-1]
         if value:
             value = value.isoformat()
-        context.write(value.isoformat())
+        context.write(value)
 
     def write_datetime(self, value):
         context = self.context_stack[-1]

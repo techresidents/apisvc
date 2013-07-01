@@ -4,6 +4,8 @@ from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
 from resources.user import UserResource
+from resources.developer_profile import DeveloperProfileResource
+from resources.employer_profile import EmployerProfileResource
 from resources.chat import ChatResource
 from resources.chat_credential import ChatCredentialResource
 from resources.chat_participant import ChatParticipantResource
@@ -12,6 +14,8 @@ from resources.chat_reel import ChatReelResource
 from resources.skill import SkillResource
 from resources.archive import ArchiveResource
 from resources.position_pref import PositionPreferenceResource
+from resources.technology_pref import TechnologyPreferenceResource
+from resources.location_pref import LocationPreferenceResource
 from resources.requisition import RequisitionResource
 from resources.requisition_technology import RequisitionTechnologyResource
 from resources.application import ApplicationResource
