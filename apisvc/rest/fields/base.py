@@ -198,14 +198,20 @@ class DateField(Field):
 
         if value is None:
             result = None
-        elif isinstance(value, datetime.date):
-            result = value
         elif isinstance(value, datetime.datetime):
-            result = datetime.date()
+            result = value.replace(tzinfo=pytz.utc)
+        elif isinstance(value, datetime.date):
+            dt = datetime.datetime(value.year, value.month, value.day)
+            result = dt.replace(tzinfo=pytz.utc)
+        elif isinstance(value, (int, float)):
+            result = tz.timestamp_to_utc(value)
         elif isinstance(value, basestring):
-            result = tz.isodate_to_utc(value)
+            result = tz.iso_to_utc(value) or tz.now_to_utc(value)
             if result is None:
-                raise ValidationError("invalid date '%s'" % str(value))
+                try:
+                    result = tz.timestamp_to_utc(float(value))
+                except:
+                    raise ValidationError("invalid date '%s'" % str(value))
         else :
             raise ValidationError("invalid date '%s'" % str(value))
         return result

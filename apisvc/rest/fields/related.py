@@ -89,6 +89,51 @@ class EncodedForeignKey(ForeignKey):
             result = basic_decode(value)
         return result
 
+class OneToOne(RelatedField):
+    def __init__(self, relation, backref=None, reverse=None, attname=None, **kwargs):
+        self._attname = attname
+        super(OneToOne, self).__init__(many=False, default=None, **kwargs)
+        self.relation = relation
+        self.backref = backref
+        self.reverse = reverse
+
+    def get_attname(self):
+        return self._attname if self._attname else "%s_id" % self.name
+
+    def contribute_to_class(self, container_class, name):
+        super(OneToOne, self).contribute_to_class(container_class, name)
+        if self.relation == "self":
+            self.relation = container_class
+            self.self_referential = True
+
+        setattr(container_class, name, RelatedDescriptor(self))
+
+        if self.backref is not None:
+            hidden = self.backref.endswith("+")
+            self.reverse = OneToOne(
+                    relation=container_class,
+                    backref=None,
+                    reverse=self,
+                    self_referential=self.self_referential,
+                    hidden=hidden)
+            self.reverse.contribute_to_class(self.relation, self.backref)
+
+class EncodedOneToOne(OneToOne):
+    def to_python(self, value):
+        result = value
+        if isinstance(value, int):
+            result = basic_encode(value)
+        elif not isinstance(value, basestring):
+            result = str(value)
+        return result
+
+    def to_model(self, value):
+        result = value
+        if isinstance(value, basestring):
+            result = basic_decode(value)
+        return result
+
+
 class ManyToMany(RelatedField):
     def __init__(self, relation, backref=None, reverse=None, through=None, backref_through=None, **kwargs):
         super(ManyToMany, self).__init__(many=True, **kwargs)

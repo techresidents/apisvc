@@ -21,9 +21,7 @@ class Skill(Struct):
 class LocationPref(Struct):
     id = fields.IntegerField()
     location_id = fields.IntegerField()
-    name = fields.StringField(filter_ext=".raw")
-    city = fields.StringField()
-    state = fields.StringField()
+    region = fields.StringField(filter_ext=".raw")
 
 class PositionPref(Struct):
     id = fields.IntegerField()
@@ -48,7 +46,7 @@ class UserSearchResource(Resource):
             "yrs_experience": ["eq", "in", "range", "ranges"],
             "joined": ["eq", "in", "range", "ranges"],
             "skills__name": ["eq", "in"],
-            "location_prefs__name": ["eq", "in"],
+            "location_prefs__region": ["eq", "in"],
             "position_prefs__type": ["eq", "in"],
             "technology_prefs__name": ["eq", "in"]
         }
@@ -73,7 +71,7 @@ class UserSearchResource(Resource):
     location_prefs = fields.ListField(field=fields.StructField(LocationPref, dict))
     position_prefs = fields.ListField(field=fields.StructField(PositionPref, dict))
     technology_prefs = fields.ListField(field=fields.StructField(TechnologyPref, dict))
-    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.name'],
+    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.region'],
             nullable=True)
     
     #related fields
@@ -85,8 +83,8 @@ class UserSearchResource(Resource):
             es_field="skills.name.raw",
             size_option="f_skills_size")
     f_location_prefs = TermsFacet(title="Location Preferences",
-            field="location_prefs__name",
-            es_field="location_prefs.name.raw",
+            field="location_prefs__region",
+            es_field="location_prefs.region.raw",
             size_option="f_location_prefs_size")
     f_position_prefs = TermsFacet(title="Position Preferences",
             field="position_prefs__type",

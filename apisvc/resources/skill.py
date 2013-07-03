@@ -6,6 +6,7 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
+from auth import UserAuthorizer
 from resources.user import UserResource
 from resources.technology import TechnologyResource
 
@@ -19,7 +20,7 @@ class SkillResource(Resource):
     class Meta:
         resource_name = "skills"
         model_class = Skill
-        methods = ["GET"]
+        methods = ["GET", "POST", "PUT", "DELETE"]
         bulk_methods = ["GET"]
         related_methods = {
             "user": ["GET"],
@@ -48,3 +49,4 @@ class SkillResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = UserAuthorizer(['user_id'], ['GET'])

@@ -14,17 +14,22 @@ class LocationResource(Resource):
         filtering = {
             "id": ["eq"],
             r"users\+__id": ["eq"],
-            "city": ["eq", "in"]
+            "region": ["eq", "in"]
         }
         limit = 20
-        ordering = ["city", "state"]
+        ordering = ["region"]
     
     id = fields.IntegerField(primary_key=True)
+    region = fields.StringField()
     country = fields.StringField()
     state = fields.StringField()
-    city = fields.StringField(nullable=True)
-    county = fields.StringField(nullable=True)
-    zip = fields.StringField(nullable=True)
+    city = fields.StringField()
+    county = fields.StringField()
+    zip = fields.StringField()
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+
+#Add subresources with cirucular dependency
+from resources.location_search import LocationSearchResource
+LocationResource.add_to_class('search', LocationSearchResource())

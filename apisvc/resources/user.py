@@ -5,6 +5,7 @@ from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.sanitization import ResourceSanitizer
 from rest.resource import Resource
+from auth import UserAuthorizer
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
 from resources.tenant import TenantResource
@@ -34,14 +35,18 @@ class UserResource(Resource):
     class Meta:
         resource_name = "users"
         model_class = User
-        methods = ["GET"]
+        methods = ["GET", "PUT"]
         bulk_methods = ["GET"]
         related_methods = {
             "tenant": ["GET"],
+            "developer_profile": ["GET"],
+            "employer_profile": ["GET"],
             "chats": ["GET"],
             "chat_reels": ["GET"],
             "skills": ["GET"],
+            "locations": ["GET"],
             "location_prefs": ["GET"],
+            "technologies": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
             "applications": ["GET"],
@@ -51,7 +56,9 @@ class UserResource(Resource):
             "chats": ["GET"],
             "chat_reels": ["GET"],
             "skills": ["GET"],
+            "locations": ["GET"],
             "location_prefs": ["GET"],
+            "technologies": ["GET"],
             "technology_prefs": ["GET"],
             "position_prefs": ["GET"],
             "applications": ["GET"],
@@ -67,11 +74,15 @@ class UserResource(Resource):
         }
         with_relations = [
             r"^tenant$",
+            r"^developer_profile$",
+            r"^employer_profile$",
             r"^chats(__topic)?$",
             r"^chat_reels(__chat(__topic)?)?$",
-            r"^location_prefs$",
+            r"^locations$",
+            r"^location_prefs(__location)?$",
             r"^skills(__technology)?$",
-            r"^technology_prefs$",
+            r"^technologies$",
+            r"^technology_prefs(__technology)?$",
             r"^position_prefs$"
             ]
         ordering = []
@@ -84,13 +95,15 @@ class UserResource(Resource):
     first_name = fields.StringField()
     last_name = fields.StringField()
     email = fields.StringField(readonly=True)
+    timezone = fields.StringField()
     
     tenant = fields.EncodedForeignKey(TenantResource, backref="users")
-    location_prefs = fields.ManyToMany(LocationResource, through=JobLocationPref, backref="users+")
-    technology_prefs = fields.ManyToMany(TechnologyResource, through=JobTechnologyPref, backref="users")
+    locations = fields.ManyToMany(LocationResource, through=JobLocationPref, backref="users+")
+    technologies = fields.ManyToMany(TechnologyResource, through=JobTechnologyPref, backref="users")
     
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
+    authorizer = UserAuthorizer(['id'], ['GET'])
     sanitizer = UserSanitizer()
 
 
