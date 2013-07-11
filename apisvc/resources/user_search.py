@@ -67,6 +67,8 @@ class UserSearchResource(Resource):
     user_id = fields.EncodedField(model_attname="id")
     yrs_experience = fields.IntegerField()
     joined = fields.DateTimeField()
+    location = fields.StringField(nullable=True)
+    actively_seeking = fields.BooleanField()
     skills = fields.ListField(field=fields.StructField(Skill, dict))
     location_prefs = fields.ListField(field=fields.StructField(LocationPref, dict))
     position_prefs = fields.ListField(field=fields.StructField(PositionPref, dict))
