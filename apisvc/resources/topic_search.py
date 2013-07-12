@@ -1,16 +1,22 @@
-from factory.db import db_session_factory
 from factory.es import es_client_pool
 
 from rest import fields
-from rest.alchemy.fields import EnumField
 from rest.authentication import SessionAuthenticator
 from rest.es.facet import RangeFacet
 from rest.es.fields import MultiMatchQueryField
 from rest.es.manager import ElasticSearchManager
 from rest.resource import Resource
 from rest.struct import Struct
-from resources.topic import TopicResource, TopicTypeEnum
+from resources.topic import TopicResource
 
+class TopicSearchManager(ElasticSearchManager):
+    def __init__(self, *args, **kwargs):
+        super(TopicSearchManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "active" not in kwargs:
+            kwargs["active"] = True
+        return super(TopicSearchManager, self).build_all_query(**kwargs) 
 
 class TopicStruct(Struct):
     id = fields.IntegerField()
@@ -33,6 +39,7 @@ class TopicSearchResource(Resource):
         bulk_methods = ["GET"]
         filtering = {
             "q": ["eq"],
+            "active": ["eq"],
             "duration": ["eq", "in", "range", "ranges"]
         }
         with_relations = [
@@ -52,6 +59,7 @@ class TopicSearchResource(Resource):
     description = fields.StringField()
     tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
     duration = fields.IntegerField()
+    active = fields.BooleanField()
     q = MultiMatchQueryField(
         es_fields=['title^6', 'description^3', 'subtopic_summary^1'],
         nullable=True)
@@ -66,5 +74,5 @@ class TopicSearchResource(Resource):
         add(602, 3600, name="10+ mins")
 
     #objects
-    objects = ElasticSearchManager(es_client_pool)
+    objects = TopicSearchManager(es_client_pool)
     authenticator = SessionAuthenticator()

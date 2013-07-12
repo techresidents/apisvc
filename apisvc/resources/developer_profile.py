@@ -24,6 +24,7 @@ class DeveloperProfileResource(Resource):
     user_id = fields.EncodedField()
     location = fields.StringField(nullable=True)
     developer_since = fields.DateField(nullable=True)
+    actively_seeking = fields.BooleanField()
 
     user = fields.EncodedOneToOne(UserResource, backref="developer_profile", model_name="user", model_attname="user_id")
 
