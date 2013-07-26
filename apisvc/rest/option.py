@@ -10,7 +10,7 @@ class Option(object):
         for name, value in kwargs.items():
             option = resource_class.desc.options_by_name.get(name, None)
             if option is None:
-                raise ValidationError()
+                raise ValidationError("invalid option")
             options[option.name] = option.validate(value)
         return options
 

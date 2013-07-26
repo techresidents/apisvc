@@ -28,7 +28,7 @@ class SessionAuthenticationMiddleware(RestMiddleware):
             response = ExceptionResponse(error)
         except Exception as error:
             logging.exception(error)
-            return ExceptionResponse(AuthenticationError())
+            return ExceptionResponse(AuthenticationError(str(error)))
         
         return response
 
