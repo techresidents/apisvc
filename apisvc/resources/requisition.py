@@ -90,10 +90,10 @@ class RequisitionResource(Resource):
     position_type = EnumField(PositionTypeEnum, model_attname="position_type_id")
     title = fields.StringField()
     description = fields.StringField()
-    salary_start = fields.IntegerField()
-    salary_end = fields.IntegerField()
+    salary = fields.StringField()
     telecommute = fields.BooleanField()
     relocation = fields.BooleanField()
+    equity = fields.StringField(nullable=True)
     employer_requisition_identifier = fields.StringField(nullable=True)
     deleted = fields.BooleanField(hidden=True)
 
