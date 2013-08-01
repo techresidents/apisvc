@@ -1,4 +1,5 @@
-from tres.query import MatchQuery, MultiMatchQuery
+from tres.query import CustomScoreQuery, MatchAllQuery, MatchQuery,\
+        MultiMatchQuery
 
 from rest import fields
 
@@ -40,3 +41,24 @@ class MultiMatchQueryField(QueryField):
             return MultiMatchQuery(q, self.es_fields)
         else:
             return None
+
+class CustomScoreMultiMatchQueryField(QueryField):
+    def __init__(self, es_score_field, es_fields, **kwargs):
+        super(CustomScoreMultiMatchQueryField, self).__init__(**kwargs)
+        self.es_fields = es_fields
+        self.es_score_field = es_score_field
+
+    
+    def build_query(self, query):
+        q = None
+        for f in query.filters:
+            op = f.operation
+            if op.target_field.name == self.name and op.name == 'eq':
+                q = op.operands[0]
+        if q:
+            return CustomScoreQuery(
+                    MultiMatchQuery(q, self.es_fields),
+                    "_score * doc['%s'].value" % self.es_score_field)
+        else:
+            return CustomScoreQuery(MatchAllQuery(),
+                    "_score * doc['%s'].value" % self.es_score_field)
