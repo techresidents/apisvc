@@ -4,7 +4,7 @@ from rest import fields
 from rest.authentication import SessionAuthenticator
 from rest.struct import Struct
 from rest.es.facet import TermsFacet, RangeFacet, DateRangeFacet
-from rest.es.fields import MultiMatchQueryField
+from rest.es.fields import CustomScoreMultiMatchQueryField
 from rest.es.manager import ElasticSearchManager
 from rest.option import Option
 from rest.resource import Resource
@@ -35,6 +35,11 @@ class TechnologyPref(Struct):
     technology_id = fields.IntegerField()
     name = fields.StringField(filter_ext=".raw")
 
+class Chat(Struct):
+    id = fields.EncodedField()
+    topic_id = fields.IntegerField()
+    topic_title = fields.StringField(filter_ext=".raw")
+
 class UserSearchResource(Resource):
     class Meta:
         resource_name = "search"
@@ -46,6 +51,7 @@ class UserSearchResource(Resource):
             "yrs_experience": ["eq", "in", "range", "ranges"],
             "joined": ["eq", "in", "range", "ranges"],
             "skills__name": ["eq", "in"],
+            "chats__topic_title": ["eq", "in"],
             "location_prefs__region": ["eq", "in"],
             "position_prefs__type": ["eq", "in"],
             "technology_prefs__name": ["eq", "in"]
@@ -58,6 +64,7 @@ class UserSearchResource(Resource):
     
     #options
     f_skills_size = Option(default=10, field=fields.IntegerField())
+    f_chats_size = Option(default=10, field=fields.IntegerField())
     f_location_prefs_size = Option(default=10, field=fields.IntegerField())
     f_position_prefs_size = Option(default=10, field=fields.IntegerField())
     f_technology_prefs_size = Option(default=10, field=fields.IntegerField())
@@ -73,7 +80,10 @@ class UserSearchResource(Resource):
     location_prefs = fields.ListField(field=fields.StructField(LocationPref, dict))
     position_prefs = fields.ListField(field=fields.StructField(PositionPref, dict))
     technology_prefs = fields.ListField(field=fields.StructField(TechnologyPref, dict))
-    q = MultiMatchQueryField(es_fields=['skills.name', 'location_prefs.region'],
+    chats = fields.ListField(field=fields.StructField(Chat, dict))
+    q = CustomScoreMultiMatchQueryField(
+            es_score_field='score',
+            es_fields=['skills.name', 'location_prefs.region'],
             nullable=True)
     
     #related fields
@@ -84,6 +94,10 @@ class UserSearchResource(Resource):
             field="skills__name",
             es_field="skills.name.raw",
             size_option="f_skills_size")
+    f_chats = TermsFacet(title="Chats",
+            field="chats__topic_title",
+            es_field="chats.topic_title.raw",
+            size_option="f_chats_size")
     f_location_prefs = TermsFacet(title="Location Preferences",
             field="location_prefs__region",
             es_field="location_prefs.region.raw",
