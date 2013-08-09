@@ -33,6 +33,7 @@ class ApplicationResource(Resource):
             "id": ["eq"],
             "tenant_id": ["eq"],
             "tenant__id": ["eq"],
+            "user_id" : ["eq"],
             "user__id": ["eq"],
             "created": ["eq", "range"],
             "status": ["eq", "in", "istartswith"],

@@ -24,7 +24,10 @@ class JobOfferResource(Resource):
         methods = ["GET", "POST", "PUT"]
         bulk_methods = ["GET"]
         filtering = {
-            "id": ["eq"]
+            "id": ["eq"],
+            "tenant__id": ["eq"],
+            "candidate_id": ["eq"],
+            "status": ["eq"]
         }    
         with_relations = []
 

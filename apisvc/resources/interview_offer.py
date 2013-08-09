@@ -31,9 +31,13 @@ class InterviewOfferResource(Resource):
         bulk_methods = ["GET"]
         filtering = {
             "id": ["eq"],
-            "application__id": ["eq"]
+            "tenant__id": ["eq"],
+            "candidate_id": ["eq"],
+            "application__id": ["eq"],
+            "application__requisition__status": ["eq"]
         }    
-        with_relations = []
+        with_relations = ['application']
+        ordering = ['created']
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()
@@ -45,7 +49,7 @@ class InterviewOfferResource(Resource):
     expires = fields.DateTimeField()
     created = fields.DateTimeField(nullable=True, readonly=True)
 
-    tenant = fields.EncodedForeignKey(TenantResource, backref="interview_offers+")
+    tenant = fields.EncodedForeignKey(TenantResource, backref="interview_offers")
     candidate = fields.EncodedForeignKey(UserResource, backref="interview_offers")
     employee = fields.EncodedForeignKey(UserResource, backref="interview_offers+")
     application = fields.EncodedForeignKey(ApplicationResource, backref="interview_offers")
