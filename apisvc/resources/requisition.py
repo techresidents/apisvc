@@ -80,6 +80,7 @@ class RequisitionResource(Resource):
             "title",
             "status"
         ]
+        limit = 40
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()

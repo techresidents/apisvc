@@ -14,13 +14,17 @@ class TenantResource(Resource):
             "users": ["GET"],
             "applications": ["GET"],
             "requisitions": ["GET"],
-            "job_notes": ["GET"]
+            "job_notes": ["GET"],
+            "job_offers": ["GET"],
+            "interview_offers": ["GET"]
         }
         related_bulk_methods = {
             "users": ["GET"],
             "applications": ["GET"],
             "requisitions": ["GET"],
-            "job_notes": ["GET"]
+            "job_notes": ["GET"],
+            "job_offers": ["GET"],
+            "interview_offers": ["GET"]
         }
         filtering = {
             "id": ["eq"],
