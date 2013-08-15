@@ -95,7 +95,6 @@ class UserResource(Resource):
     first_name = fields.StringField()
     last_name = fields.StringField()
     email = fields.StringField(readonly=True)
-    timezone = fields.StringField()
     
     tenant = fields.EncodedForeignKey(TenantResource, backref="users")
     locations = fields.ManyToMany(LocationResource, through=JobLocationPref, backref="users+")
