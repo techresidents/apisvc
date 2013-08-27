@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.techresidents.services.apisvc</groupId>
         <artifactId>apisvc-idl</artifactId>
-        <version>0.20-SNAPSHOT</version>
+        <version>0.21-SNAPSHOT</version>
     </parent>
 
     <artifactId>apisvc-idl-idl</artifactId>
