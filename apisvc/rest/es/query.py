@@ -99,7 +99,7 @@ class ElasticSearchQuery(Query):
                 if target_field.options.get("sort_ext"):
                     es_field += target_field.options.get("sort_ext")
                     es_sort.add(es_field, order_by.direction)
-        if es_sort.length():
+        if len(es_sort):
             search.sort = es_sort
         return search
     
