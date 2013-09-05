@@ -32,12 +32,25 @@ class InterviewOfferResource(Resource):
         filtering = {
             "id": ["eq"],
             "tenant__id": ["eq"],
-            "candidate_id": ["eq"],
+            "candidate_id": ["eq", "in"],
+            "status": ["eq", "in"],
+            "type": ["eq", "in"],
+            "created": ["eq", "range"],
+            "expires": ["eq", "range"],
             "application__id": ["eq"],
-            "application__requisition__status": ["eq"]
+            "application__requisition__status": ["eq"],
+            "application__requisition__title": ["eq", "in", "istartswith"]
         }    
         with_relations = ['application']
-        ordering = ['created']
+        ordering = [
+            "candidate_id",
+            "created",
+            "expires",
+            "status",
+            "type",
+            "application__requisition__title"
+        ]
+        limit = 40
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()

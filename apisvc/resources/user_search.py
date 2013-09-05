@@ -10,6 +10,15 @@ from rest.option import Option
 from rest.resource import Resource
 from resources.user import UserResource
 
+class UserSearchManager(ElasticSearchManager):
+    def __init__(self, *args, **kwargs):
+        super(UserSearchManager, self).__init__(*args, **kwargs)
+
+    def build_all_query(self, **kwargs):
+        if "demo" not in kwargs:
+            kwargs["demo"] = True
+        return super(UserSearchManager, self).build_all_query(**kwargs)
+
 class Skill(Struct):
     id = fields.IntegerField()
     technology_id = fields.IntegerField()
@@ -54,7 +63,8 @@ class UserSearchResource(Resource):
             "chats__topic_title": ["eq", "in"],
             "location_prefs__region": ["eq", "in"],
             "position_prefs__type": ["eq", "in"],
-            "technology_prefs__name": ["eq", "in"]
+            "technology_prefs__name": ["eq", "in"],
+            "demo" : ["eq"]
         }
         with_relations = [
             "^user(__skills)?$"
@@ -85,6 +95,7 @@ class UserSearchResource(Resource):
             es_score_field='score',
             es_fields=['skills.name', 'location_prefs.region'],
             nullable=True)
+    demo = fields.BooleanField()
     
     #related fields
     user = fields.EncodedForeignKey(UserResource, backref="searches+")
@@ -120,5 +131,5 @@ class UserSearchResource(Resource):
             .add("now-12M", "now", name="Last year")
     
     #objects
-    objects = ElasticSearchManager(es_client_pool)
+    objects = UserSearchManager(es_client_pool)
     authenticator = SessionAuthenticator()

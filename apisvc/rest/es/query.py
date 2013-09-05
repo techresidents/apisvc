@@ -2,6 +2,7 @@ from tres_gevent.query import BoolQuery, FilteredQuery, MatchAllQuery
 from tres_gevent.search import Search
 from tres_gevent.filter import BoolFilter, RangeFilter, TermFilter, TermsFilter
 from tres_gevent.facet import Facets
+from tres_gevent.sort import Sort
 
 from rest.es.fields import QueryField
 from rest.query import Query
@@ -87,6 +88,19 @@ class ElasticSearchQuery(Query):
         return search
     
     def _apply_order_bys(self, search):
+        es_sort = Sort()
+        for order_by in self.order_bys:
+            target_field = order_by.target_field
+            if not isinstance(target_field, QueryField):
+                # Convert path__target to path.target.raw
+                path = [f.model_attname for f in order_by.path_fields]
+                path.append(target_field.model_attname)
+                es_field = ".".join(path)
+                if target_field.options.get("sort_ext"):
+                    es_field += target_field.options.get("sort_ext")
+                    es_sort.add(es_field, order_by.direction)
+        if len(es_sort):
+            search.sort = es_sort
         return search
     
     def _apply_slices(self, search):

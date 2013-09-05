@@ -33,7 +33,7 @@ class ApplicationResource(Resource):
             "id": ["eq"],
             "tenant_id": ["eq"],
             "tenant__id": ["eq"],
-            "user_id" : ["eq"],
+            "user_id" : ["eq", "in"],
             "user__id": ["eq"],
             "created": ["eq", "range"],
             "status": ["eq", "in", "istartswith"],
@@ -53,7 +53,14 @@ class ApplicationResource(Resource):
             "interview_offers": ["GET"]
         }
         with_relations = ['requisition']
-        ordering = ['created', 'status', 'requisition__status', 'requisition__title']
+        ordering = [
+            "created",
+            "status",
+            "user_id",
+            "requisition__status",
+            "requisition__title",
+        ]
+        limit = 40
 
     id = fields.EncodedField(primary_key=True)
     tenant_id = fields.EncodedField()

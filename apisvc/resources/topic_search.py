@@ -16,6 +16,8 @@ class TopicSearchManager(ElasticSearchManager):
     def build_all_query(self, **kwargs):
         if "active" not in kwargs:
             kwargs["active"] = True
+        if "order_by" not in kwargs:
+            kwargs["order_by"] = "title__asc"
         return super(TopicSearchManager, self).build_all_query(**kwargs) 
 
 class TopicStruct(Struct):
@@ -55,7 +57,7 @@ class TopicSearchResource(Resource):
     topic_id = fields.EncodedField(model_attname='id')
     type = fields.StringField()
     #type = EnumField(TopicTypeEnum, model_attname="type_id")
-    title = fields.StringField()
+    title = fields.StringField(sort_ext=".raw")
     description = fields.StringField()
     tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
     duration = fields.IntegerField()
