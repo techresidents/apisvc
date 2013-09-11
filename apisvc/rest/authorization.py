@@ -427,28 +427,16 @@ class MacroAuthorizer(ResourceAuthorizer):
         return response
 
 
-class MultiAuthorizer(ResourceAuthorizer):
-    def __init__(self, authorizer_map):
-        super(MultiAuthorizer, self).__init__()
-        self.authorizer_map = self._normalize_authorizer_map(authorizer_map)
+class ContextAuthorizer(ResourceAuthorizer):
+    def __init__(self):
+        super(ContextAuthorizer, self).__init__()
     
-    def _normalize_authorizer_map(self, authorizer_map):
-        result = {}
-        for methods, authorizer in authorizer_map.items():
-            if isinstance(methods, basestring):
-                result[methods] = authorizer
-            else:
-                for method in methods:
-                    result[method] = authorizer
-        return result
-
     def _get_authorizer(self, context):
-        return self.authorizer_map.get(context.method, None)
+        #Overriden in subclass
+        return None
 
     def contribute_to_class(self, resource_class, name):
-        for authorizer in self.authorizer_map.values():
-            authorizer.contribute_to_class(resource_class, name)
-        super(MultiAuthorizer, self).contribute_to_class(resource_class, name)
+        super(ContextAuthorizer, self).contribute_to_class(resource_class, name)
 
     def authorize_request(self, context, request, **kwargs):
         auth = self._get_authorizer(context)
@@ -638,6 +626,31 @@ class MultiAuthorizer(ResourceAuthorizer):
         if auth is not None:
             response = auth.authorize_delete_related_query_response(context, response, query)
         return response
+
+
+class RequestMethodAuthorizer(ContextAuthorizer):
+    def __init__(self, authorizer_map):
+        super(RequestMethodAuthorizer, self).__init__()
+        self.authorizer_map = self._normalize_authorizer_map(authorizer_map)
+    
+    def _normalize_authorizer_map(self, authorizer_map):
+        result = {}
+        for methods, authorizer in authorizer_map.items():
+            if isinstance(methods, basestring):
+                result[methods] = authorizer
+            else:
+                for method in methods:
+                    result[method] = authorizer
+        return result
+
+    def _get_authorizer(self, context):
+        return self.authorizer_map.get(context.method, None)
+
+    def contribute_to_class(self, resource_class, name):
+        for authorizer in self.authorizer_map.values():
+            authorizer.contribute_to_class(resource_class, name)
+        super(RequestMethodAuthorizer, self).contribute_to_class(resource_class, name)
+
 
 
 class FilterAuthorizer(ResourceAuthorizer):

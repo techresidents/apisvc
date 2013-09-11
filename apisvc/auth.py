@@ -1,7 +1,7 @@
 import logging
 
 from factory.session import session_store_pool
-from rest.authorization import MacroAuthorizer, FilterAuthorizer
+from rest.authorization import ContextAuthorizer, MacroAuthorizer, FilterAuthorizer
 from rest.exceptions import AuthenticationError
 from rest.middleware.base import RestMiddleware
 from rest.response import ExceptionResponse
@@ -60,3 +60,20 @@ class TenantUserAuthorizer(MacroAuthorizer):
             self.tenant_authorizer,
             self.user_authorizer
         ])
+
+class DeveloperEmployerAuthorizer(ContextAuthorizer):
+    def __init__(self, developer_authorizer, employer_authorizer):
+        super(DeveloperEmployerAuthorizer, self).__init__()
+        self.developer_authorizer = developer_authorizer
+        self.employer_authorizer = employer_authorizer
+    
+    def _get_authorizer(self, context):
+        result = self.developer_authorizer
+        if context.user_id and context.tenant_id > 1:
+            result = self.employer_authorizer
+        return result
+
+    def contribute_to_class(self, resource_class, name):
+        self.developer_authorizer.contribute_to_class(resource_class, name)
+        self.employer_authorizer.contribute_to_class(resource_class, name)
+        super(DeveloperEmployerAuthorizer, self).contribute_to_class(resource_class, name)
