@@ -3,7 +3,7 @@ from factory.db import db_session_factory
 from rest import fields
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
-from rest.authorization import MultiAuthorizer
+from rest.authorization import RequestMethodAuthorizer
 from rest.resource import Resource
 from auth import TenantAuthorizer, TenantUserAuthorizer
 from resources.user import UserResource
@@ -36,7 +36,7 @@ class ApplicationLogResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
-    authorizer = MultiAuthorizer({
+    authorizer = RequestMethodAuthorizer({
         "GET": TenantAuthorizer(['tenant', 'tenant_id']),
         ("POST", "PUT", "DELETE"): TenantUserAuthorizer(
             ['tenant', 'tenant_id'],

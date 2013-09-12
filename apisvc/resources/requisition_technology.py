@@ -42,4 +42,4 @@ class RequisitionTechnologyResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
-    authorizer = TenantAuthorizer('requisition__tenant')
+    authorizer = TenantAuthorizer('requisition__tenant', ['GET'])

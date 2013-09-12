@@ -6,10 +6,22 @@ from rest.alchemy.fields import EnumField
 from rest.alchemy.manager import AlchemyResourceManager
 from rest.authentication import SessionAuthenticator
 from rest.resource import Resource
-from auth import TenantAuthorizer
+from auth import DeveloperEmployerAuthorizer, TenantAuthorizer, UserAuthorizer
 from resources.user import UserResource
 from resources.tenant import TenantResource
 from resources.requisition import RequisitionResource
+
+class ApplicationDeveloperAuthorizer(UserAuthorizer):
+    def __init__(self, *args, **kwargs):
+        super(ApplicationDeveloperAuthorizer, self).__init__(*args, **kwargs)
+        self.allowed_methods = ['GET']
+    
+    def authorize_query(self, context, request, query):
+        query = super(ApplicationDeveloperAuthorizer, self).authorize_query(
+                context, request, query)
+        if context.method not in self.allowed_methods:
+            raise AuthorizationError('invalid method: %s' % context.method)
+        return query
 
 class ApplicationTypeEnum(Enum):
     model_class = JobApplicationType
@@ -79,4 +91,6 @@ class ApplicationResource(Resource):
 
     objects = AlchemyResourceManager(db_session_factory)
     authenticator = SessionAuthenticator()
-    authorizer = TenantAuthorizer(['tenant', 'tenant_id'])
+    authorizer = DeveloperEmployerAuthorizer(
+            developer_authorizer=ApplicationDeveloperAuthorizer(['user', 'user_id']),
+            employer_authorizer=TenantAuthorizer(['tenant', 'tenant_id']))
