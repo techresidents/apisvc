@@ -1,4 +1,6 @@
+from resources.tag import TagResource
 from resources.topic import TopicResource
+from resources.topic_tag import TopicTagResource
 from resources.talking_point import TalkingPointResource
 from resources.location import LocationResource
 from resources.technology import TechnologyResource
