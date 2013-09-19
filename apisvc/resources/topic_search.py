@@ -2,9 +2,10 @@ from factory.es import es_client_pool
 
 from rest import fields
 from rest.authentication import SessionAuthenticator
-from rest.es.facet import RangeFacet
+from rest.es.facet import RangeFacet, TermsFacet
 from rest.es.fields import MultiMatchQueryField
 from rest.es.manager import ElasticSearchManager
+from rest.option import Option
 from rest.resource import Resource
 from rest.struct import Struct
 from resources.topic import TopicResource
@@ -33,6 +34,10 @@ class TopicStruct(Struct):
     active = fields.BooleanField()
     level = fields.IntegerField()
 
+class TagStruct(Struct):
+    id = fields.IntegerField()
+    name = fields.StringField(filter_ext=".raw")
+
 class TopicSearchResource(Resource):
     class Meta:
         resource_name = "search"
@@ -42,7 +47,8 @@ class TopicSearchResource(Resource):
         filtering = {
             "q": ["eq"],
             "active": ["eq"],
-            "duration": ["eq", "in", "range", "ranges"]
+            "duration": ["eq", "in", "range", "ranges"],
+            "tags__name": ["eq", "in"]
         }
         with_relations = [
             "^topic$"
@@ -52,6 +58,9 @@ class TopicSearchResource(Resource):
         ]
         limit = 20
 
+    #options
+    f_tags_size = Option(default=10, field=fields.IntegerField())
+
     #fields
     id = fields.EncodedField(primary_key=True)
     topic_id = fields.EncodedField(model_attname='id')
@@ -60,10 +69,11 @@ class TopicSearchResource(Resource):
     title = fields.StringField(sort_ext=".raw")
     description = fields.StringField()
     tree = fields.ListField(field=fields.StructField(TopicStruct, dict))
+    tags = fields.ListField(field=fields.StructField(TagStruct, dict))
     duration = fields.IntegerField()
     active = fields.BooleanField()
     q = MultiMatchQueryField(
-        es_fields=['title^6', 'description^3', 'subtopic_summary^1'],
+        es_fields=['title^6', 'description^3', 'tags.name^2', 'subtopic_summary^1'],
         nullable=True)
 
     #related fields
@@ -74,6 +84,10 @@ class TopicSearchResource(Resource):
         add(0, 301, name="under 5 mins").\
         add(302, 601, name="5 to 10 mins").\
         add(602, 3600, name="10+ mins")
+    f_tags = TermsFacet(title="Tags",
+            field="tags__name",
+            es_field="tags.name.raw",
+            size_option="f_tags_size")
 
     #objects
     objects = TopicSearchManager(es_client_pool)

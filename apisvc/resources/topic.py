@@ -1,5 +1,5 @@
 from trsvcscore.db.enum import Enum
-from trsvcscore.db.models import Topic, TopicType
+from trsvcscore.db.models import Topic, TopicType, TopicTag
 from trsvcscore.db.managers.tree import TreeManager
 from factory.db import db_session_factory
 from rest import fields
@@ -10,6 +10,7 @@ from rest.resource import Resource
 from rest.alchemy.query import AlchemyQuery
 from auth import UserAuthorizer
 from resources.user import UserResource
+from resources.tag import TagResource
 
 class TopicTypeEnum(Enum):
     model_class = TopicType
@@ -86,10 +87,12 @@ class TopicResource(Resource):
         related_methods = {
             "children": ["GET"],
             "talking_points": ["GET"],
+            "tags": ["GET"],
         }
         related_bulk_methods = {
             "talking_points": ["GET"],
             "chats": ["GET"],
+            "tags": ["GET"],
         }
         filtering = {
             "id": ["eq"],
@@ -102,6 +105,7 @@ class TopicResource(Resource):
             r"^tree$",
             r"^children$",
             r"^talking_points$",
+            r"^tags$"
             ]
         ordering = ["id"]
         limit = 20
@@ -121,6 +125,7 @@ class TopicResource(Resource):
 
     parent = fields.EncodedForeignKey("self", backref="children", nullable=True)
     user = fields.EncodedForeignKey(UserResource, backref="topics+")
+    tags = fields.ManyToMany(TagResource, through=TopicTag, backref="topics+")
 
     objects = TopicManager(db_session_factory)
     authorizer = UserAuthorizer(['user', 'user_id'], ["GET"])
