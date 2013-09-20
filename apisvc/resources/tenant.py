@@ -16,7 +16,9 @@ class TenantResource(Resource):
             "requisitions": ["GET"],
             "job_notes": ["GET"],
             "job_offers": ["GET"],
-            "interview_offers": ["GET"]
+            "interview_offers": ["GET"],
+            "company_profile": ["GET"]
+
         }
         related_bulk_methods = {
             "users": ["GET"],
@@ -30,6 +32,9 @@ class TenantResource(Resource):
             "id": ["eq"],
             "users__id": ["eq"]
         }
+        with_relations = [
+            r"^company_profile$"
+            ]
         ordering = []
         limit = 20
     
