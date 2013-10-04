@@ -28,4 +28,4 @@ from resources.interview_offer import InterviewOfferResource
 from resources.job_offer import JobOfferResource
 from resources.job_note import JobNoteResource
 from resources.job_event import JobEventResource
-from resources.company import CompanyProfileResource
+from resources.company_profile import CompanyProfileResource
