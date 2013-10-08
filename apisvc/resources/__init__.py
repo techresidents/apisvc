@@ -13,6 +13,7 @@ from resources.chat_credential import ChatCredentialResource
 from resources.chat_participant import ChatParticipantResource
 from resources.chat_message import ChatMessageResource
 from resources.chat_reel import ChatReelResource
+from resources.spotlight_chat import SpotlightChatResource
 from resources.skill import SkillResource
 from resources.archive import ArchiveResource
 from resources.position_pref import PositionPreferenceResource
